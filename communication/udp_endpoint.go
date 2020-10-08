@@ -8,15 +8,17 @@ import (
 	"os"
 )
 
+type UDPServer struct {
+	Address []byte
+	Port int
+}
 /**
 Starts the UDP endpoint
  */
-func StartUDP() {
+func (s UDPServer) StartUDP() {
 	addr := net.UDPAddr{
-		IP: []byte{
-			0, 0, 0, 0,
-		},
-		Port: 53,
+		IP: s.Address,
+		Port: s.Port,
 		Zone: "",
 	}
 	// UDP Listener
@@ -33,6 +35,7 @@ func StartUDP() {
 }
 /**
 reads from the udp connection
+https://stackoverflow.com/questions/28400340/how-support-concurrent-connections-with-a-udp-server-using-go
  */
 func listen(connection *net.UDPConn, quit chan struct{}) {
 	buffer := make([]byte, 1024)
