@@ -1,5 +1,12 @@
-web:
-  environment:
-    - WELCOME="Hello, I am a server."
-    - EXAMPLE_TIMEOUT=10
-    - ENDPOINT_PORT=1234
+version: 3
+
+# Define services
+services:
+  # App Service
+  app:
+    image: golang:latest
+    volumes:
+      - .:/go/src/go-with-compose
+    working_dir: /go/src/go-with-compose
+    command: go run main.go
+    env_file: config.env
