@@ -8,7 +8,7 @@ import (
 func main() {
 	cfg.ReadConf()
 
-	fmt.Println(cfg.StringConf)
-	fmt.Println(cfg.NumberConf)
-	fmt.Println(cfg.StringConf["WELCOME"])
+	fmt.Println(cfg.WELCOME)
+	fmt.Println(cfg.ENDPOINT_PORT)
+	fmt.Println(cfg.EXAMPLE_TIMEOUT)
 }

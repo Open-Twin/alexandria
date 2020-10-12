@@ -1,64 +1,49 @@
 package cfg
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 )
 
-var NumberConf map[string]int
-var StringConf map[string]string
+const (
+	WELCOME         = "WELCOME"
+	EXAMPLE_TIMEOUT = "EXAMPLE_TIMEOUT"
+	ENDPOINT_PORT   = "EXAMPLE_PORT"
 
-func ReadConf() []string {
-	absPath, _ := filepath.Abs("alexandria/cfg/configuration.alex")
-	file, err := os.Open(absPath)
+	ERROR_MSG = "The variable %s is not set."
+)
 
-	if err != nil {
-		log.Fatalf("failed to open config")
-	}
-
-	scanner := bufio.NewScanner(file)
-
-	scanner.Split(bufio.ScanLines)
-	var confText []string
-	for scanner.Scan() {
-		confText = append(confText, scanner.Text())
-	}
-
-	file.Close()
-
-	processConf(confText)
-
-	return confText
+type Config struct {
+	Welcome        string
+	ExampleTimeout int64
+	EndpointPort   int64
 }
 
-func processConf(filecontent []string) {
-	NumberConf = make(map[string]int)
-	StringConf = make(map[string]string)
+func ReadConf() Config {
+	fmt.Println("Reading config started")
 
-	for i, s := range filecontent {
-		// Zeile am = aufteilen auf 2 Substrings
-		field := strings.SplitN(s, "=", 2)
-		if len(field) == 2 {
-			key := field[0]
-			value := field[1]
+	cfg := Config{}
 
-			if len(value) > 3 && value[0] == '"' && value[len(value)-1] == '"' {
-				StringConf[key] = value[1 : len(field[1])-1]
-			} else {
-				numberVal, err := strconv.ParseInt(value, 10, 64)
-				if err != nil {
-					fmt.Printf("Config-Error: Wrong formatted number on %d", i)
-				} else {
-					NumberConf[key] = int(numberVal)
-				}
-			}
-		} else {
-			fmt.Printf("Config-Error on line %d", i)
-		}
+	welcome := os.Getenv(WELCOME)
+	if welcome == "" {
+		log.Fatalf(ERROR_MSG, WELCOME)
 	}
+	cfg.Welcome = welcome
+
+	exampleTimeout, err := strconv.ParseInt(os.Getenv(EXAMPLE_TIMEOUT), 10, 64)
+	if err != nil {
+		log.Fatalf(ERROR_MSG, EXAMPLE_TIMEOUT)
+	}
+	cfg.ExampleTimeout = exampleTimeout
+
+	endpointPort, err := strconv.ParseInt(os.Getenv(ENDPOINT_PORT), 10, 64)
+	if err != nil {
+		log.Fatalf(ERROR_MSG, ENDPOINT_PORT)
+	}
+	cfg.EndpointPort = endpointPort
+
+	fmt.Println("Reading config finished")
+	return cfg
 }

@@ -1,0 +1,5 @@
+web:
+  environment:
+    - WELCOME="Hello, I am a server."
+    - EXAMPLE_TIMEOUT=10
+    - ENDPOINT_PORT=1234
