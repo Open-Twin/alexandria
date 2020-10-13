@@ -1,4 +1,14 @@
+# Notizen von Fabian
+
 GoPATH geändert auf Projektordner
+
+## Docker
+
+```shell
+sudo apt install docker
+sudo apt install docker-compose
+sudo docker-compose up
+```
 
 ## Quellen
 

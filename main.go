@@ -6,9 +6,9 @@ import (
 )
 
 func main() {
-	cfg.ReadConf()
+	conf := cfg.ReadConf()
 
-	fmt.Println(cfg.WELCOME)
-	fmt.Println(cfg.ENDPOINT_PORT)
-	fmt.Println(cfg.EXAMPLE_TIMEOUT)
+	fmt.Println(conf.Welcome)
+	fmt.Println(conf.ExampleTimeout)
+	fmt.Println(conf.EndpointPort)
 }

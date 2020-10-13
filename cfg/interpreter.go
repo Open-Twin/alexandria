@@ -10,7 +10,7 @@ import (
 const (
 	WELCOME         = "WELCOME"
 	EXAMPLE_TIMEOUT = "EXAMPLE_TIMEOUT"
-	ENDPOINT_PORT   = "EXAMPLE_PORT"
+	ENDPOINT_PORT   = "ENDPOINT_PORT"
 
 	ERROR_MSG = "The variable %s is not set."
 )
