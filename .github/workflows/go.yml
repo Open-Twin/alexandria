@@ -2,7 +2,7 @@ name: Go
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ feature/cicd-yml ]
   pull_request:
     branches: [ develop ]
 
