@@ -5,10 +5,16 @@ import (
 )
 
 func main(){
-	server := communication.UDPServer{
+	udpServer := communication.UDPServer{
 		Address: []byte{0,0,0,0},
 		Port: 53,
 	}
-
-	server.StartUDP()
+	tcpServer := communication.TCPServer{
+		Address: []byte{0,0,0,0},
+		Port:    53,
+	}
+	quit := make(chan struct{})
+	go udpServer.StartUDP()
+	go tcpServer.StartTCP()
+	<-quit
 }
