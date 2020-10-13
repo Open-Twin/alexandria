@@ -2,10 +2,9 @@ package communication
 
 import (
 	"fmt"
-	"runtime"
-
 	"net"
 	"os"
+	"runtime"
 )
 
 type UDPServer struct {
@@ -57,9 +56,9 @@ func listen(connection *net.UDPConn, quit chan struct{}) {
 Handles the data from the udp connection
  */
 func handleData(n int, buffer []byte, addr* net.UDPAddr, conn *net.UDPConn){
-
+	//defer conn.Close()
 	fmt.Printf("\n--------------\n")
-	fmt.Printf("packet-received: bytes=%d from=%s\n",
+	fmt.Printf("packet-received: bytes=%d from=%s over udp\n",
 		n, addr.String())
 	fmt.Println("from", addr, "-", buffer[:n])
 	fmt.Printf("\n--------------\n")
