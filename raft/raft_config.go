@@ -3,6 +3,7 @@ package raft
 import (
 	"gopkg.in/go-playground/validator.v9"
 	"net"
+	"github.com/Open-Twin/alexandria/cfg"
 )
 
 type RawConfig struct {
@@ -13,13 +14,23 @@ type RawConfig struct {
 	DataDir     string `validate:"required,dir"`
 	Bootstrap   bool
 }
-
 type Config struct {
 	RaftAddress net.Addr	//BindAddress + Raft Port
 	HTTPAddress net.Addr	//BindAddress + HTTP Port
 	JoinAddress string
 	DataDir     string
 	Bootstrap   bool
+}
+func ReadRawConfig() RawConfig{
+	rawConf := cfg.readConfig()
+	return RawConfig{
+		BindAddress: rawConf.BindAddress,
+		JoinAddress: rawConf.JoinAddress,
+		RaftPort: rawConf.RaftPort,
+		HTTPPort: rawConf.HTTPPort,
+		DataDir: rawConf.DataDir,
+		Bootstrap: rawConf.Bootstrap,
+	}
 }
 /**
  * This method validates the raw config and returns the final config
