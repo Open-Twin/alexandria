@@ -5,24 +5,22 @@ package metadata
 	of the service mesh system.
 */
 
+// Some necessary imports
 import (
 	"encoding/json"
 	"fmt"
 	"time"
 )
 
-// Creating a struct for the services, in which the metadata struct will be located so it is easier afterwards to remove a certain service with its data
-type Service []struct {
-	ID string
-	Data Metadata
-}
+// Global variable which is a map and contains all services
+var services = make(map[string]Metadata)
 
 // Creating a structure for the metadata json, which will be later on encoded to json via marshal
 type Metadata struct {
-	Location string
-	Sensortype string
-	RequestReceived time.Time
-	IsActive bool
+	Location string `json:"Location"`
+	Sensortype string `json:"Sensortype"`
+	Registered time.Time `json:"Registered"`
+	IsActive bool `json:"IsActive"`
 }
 
 // Creating a function to convert the struct into a json
@@ -31,19 +29,40 @@ func StructToJson(data Metadata) []byte {
 	return jsondata
 }
 
-// Creating a function to return a specified service from the service array struct
-func getService() {
-	// To be continued
+// Creating a function to convert a json into the struct
+func JsonToStruct(jsonData string) Metadata {
+	data := Metadata{}
+	err := json.Unmarshal([]byte(jsonData), data)
+	if err != nil {
+		fmt.Println("Following error occurred:", err)
+	}
+	return data
 }
 
-// Creating a function to save a specified service into the service array struct
-func setSerService() {
-	// To be continued
+// Creating a function to return the metadata of a specified service from the global service map
+func getServiceMeta(ip string) Metadata{
+	return services[ip]
+}
+
+// Creating a function to return the metadata of a specified service from the global service map as a Json
+func getServiceJson(ip string) string{
+	json := StructToJson(services[ip])
+	return string(json)
+}
+
+// Creating a function to change the data of a specified service from the global service map
+func changeService(ip string, data Metadata) {
+	services[ip] = data
+}
+
+// Creating a function to change the data of a specified service from the global service map
+func addService(ip string, data Metadata) {
+	services[ip] = data
 }
 
 // Creating a function to delete a specified service from the service array struct
-func deleteService() {
-	// To be continued
+func deleteService(ip string) {
+	delete(services,ip)
 }
 
 // Creating a "main" function to test the functionality of the storage class so far
@@ -52,7 +71,7 @@ func Main() {
 	data := Metadata{
 		Location: "Vienna",
 		Sensortype: "Water",
-		RequestReceived: time.Now(),
+		Registered: time.Now(),
 		IsActive: true,
 	}
 
