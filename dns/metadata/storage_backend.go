@@ -32,7 +32,7 @@ func StructToJson(data Metadata) []byte {
 // Creating a function to convert a json into the struct
 func JsonToStruct(jsonData string) Metadata {
 	data := Metadata{}
-	err := json.Unmarshal([]byte(jsonData), data)
+	err := json.Unmarshal([]byte(jsonData), &data)
 	if err != nil {
 		fmt.Println("Following error occurred:", err)
 	}
@@ -68,16 +68,13 @@ func deleteService(ip string) {
 // Creating a "main" function to test the functionality of the storage class so far
 func Main() {
 	//define a dummy struct
-	data := Metadata{
+	wataData := Metadata{
 		Location: "Vienna",
 		Sensortype: "Water",
 		Registered: time.Now(),
-		IsActive: true,
+		IsActive: false,
 	}
 
-	// encode the data dummy into a json
-	jsondata := StructToJson(data)
-
-	// printing the json as a string into the console
-	fmt.Println(string(jsondata))
+	jsonWata := StructToJson(wataData)
+	fmt.Println(string(jsonWata))
 }
