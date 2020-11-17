@@ -8,7 +8,9 @@ type TCPServer struct {
 	Address []byte
 	Port int
 }
-func (s TCPServer) StartTCP() {
+type TCPHandler func(addr net.Addr, buf []byte) []byte
+
+func (s TCPServer) StartTCP(handler TCPHandler) {
 	addr := net.TCPAddr{
 		IP: s.Address,
 		Port: s.Port,
@@ -23,31 +25,13 @@ func (s TCPServer) StartTCP() {
 		if err != nil {
 			continue
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, handler)
 	}
 
 }
-func handleConnection(conn net.Conn){
+func handleConnection(conn net.Conn, handler TCPHandler){
 	defer conn.Close()
-	/*buf := make([]byte, 512)
-	for {
-		nRead, err := conn.Read(buf[:])
-		// Do stuff with the read bytes
-		if err != nil {
-			fmt.Print("Error: ", err)
-		}
-		fmt.Printf("packet-received: bytes=%d",
-			nRead)
 
-		buffer := string(buf[:])
-		buffer = strings.TrimSpace(buffer) //Returnt ein slice vom string, ohne whitespaces
-		splitBuffer := strings.Split(buffer, "\n")
-		for _, data := range splitBuffer {
-			log.Println(data)
-			conn.WriteTo(buf[:], addrFrom)
-		}
-
-	}*/
 	buf := make([]byte, 512)
 	for {
 		n, err := conn.Read(buf[0:])
@@ -55,8 +39,8 @@ func handleConnection(conn net.Conn){
 			return
 		}
 		addr := conn.RemoteAddr()
-		handleTCPData(n,buf,addr)
-		_, err2 := conn.Write(buf[0:n])
+		result := handleTCPData(n,buf,addr, handler)
+		_, err2 := conn.Write(result)
 		if err2 != nil {
 			return
 		}
@@ -66,14 +50,14 @@ func handleConnection(conn net.Conn){
 /**
 Handles the data from the udp connection
 */
-func handleTCPData(n int, buffer []byte, addr net.Addr) string{
-	writeData := ""
+func handleTCPData(n int, buffer []byte, addr net.Addr, handler TCPHandler) []byte{
 	fmt.Printf("\n--------------\n")
 	fmt.Printf("packet-received: bytes=%d from=%s over tcp\n",
 		n, addr.String())
 	fmt.Println("from", addr, "-", buffer[:n])
 	fmt.Printf("\n--------------\n")
-	return writeData
+	result := handler(addr,buffer)
+	return result
 }
 /**
 Checks if errors are thrown. If yes, it prints the error and exits the program
@@ -81,8 +65,8 @@ Checks if errors are thrown. If yes, it prints the error and exits the program
 /*func checkError(err error) {
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
+		log.Fatal(os.Stderr, "Fatal error: %s", err.Error())
 		//Exits the program
-		os.Exit(1)
+		//os.Exit(1)
 	}
 }*/

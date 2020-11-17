@@ -15,10 +15,10 @@ func main(){
 		Address: []byte{0,0,0,0},
 		Port: 8333,
 	}
-	/*tcpServer := communication.TCPServer{
+	tcpServer := communication.TCPServer{
 		Address: []byte{0,0,0,0},
 		Port:    53,
-	}*/
+	}
 	quit := make(chan struct{})
 	go udpServer.StartUDP(func (addr net.Addr, buf []byte) []byte{
 		fmt.Println("MAIN: "+string(buf))
@@ -28,6 +28,9 @@ func main(){
 		fmt.Println("MAIN: "+string(buf))
 		return []byte("success2")
 	})
-	//go tcpServer.StartTCP()
+	go tcpServer.StartTCP(func (addr net.Addr, buf []byte) []byte{
+		fmt.Println("MAIN: "+string(buf))
+		return []byte("success3")
+	})
 	<-quit
 }
