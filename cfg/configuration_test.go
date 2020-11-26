@@ -5,6 +5,9 @@ import (
 	"testing"
 )
 
+// Use following environment variable configuration for testing:
+// HTTP_ADDR=127.0.0.1;RAFT_ADDR=127.0.0.1;HTTP_PORT=11000;RAFT_PORT=12000;RAFT_DATA_DIR=/usr/bruh/awesomefolder;BOOTSTRAP=True
+
 var conf Config
 
 func TestMain(m *testing.M) {

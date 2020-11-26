@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// This constant saves the names of the environment variables
 const (
 	HTTP_ADDR     = "HTTP_ADDR"
 	RAFT_ADDR     = "RAFT_ADDR"
@@ -19,6 +20,7 @@ const (
 	ERROR_MSG = "The variable %s is not set."
 )
 
+// Struct that saves all the configured values
 type Config struct {
 	HttpAddr    string
 	RaftAddr    string
@@ -28,6 +30,8 @@ type Config struct {
 	Bootstrap   bool
 }
 
+// Reads the configuration from the environment variables.
+// Returns a struct with the fetched values
 func ReadConf() Config {
 	fmt.Println("Reading config started")
 
