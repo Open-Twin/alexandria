@@ -27,24 +27,24 @@ func TestRaftAddr(t *testing.T) {
 
 func TestHttpPort(t *testing.T) {
 	if conf.HttpPort != 11000 {
-		t.Errorf("%s is: %s", HTTP_PORT, conf.HttpPort)
+		t.Errorf("%s is: %d", HTTP_PORT, conf.HttpPort)
 	}
 }
 
 func TestRaftPort(t *testing.T) {
 	if conf.RaftPort != 12000 {
-		t.Errorf("%s is: %s", RAFT_PORT, conf.RaftPort)
+		t.Errorf("%s is: %d", RAFT_PORT, conf.RaftPort)
 	}
 }
 
 func TestRaftDataDir(t *testing.T) {
-	if conf.RaftAddr != "/usr/bruh/awesomefolder" {
+	if conf.RaftDataDir != "/usr/bruh/awesomefolder" {
 		t.Errorf("%s is: %s", RAFT_DATA_DIR, conf.RaftDataDir)
 	}
 }
 
 func TestBootstrap(t *testing.T) {
-	if conf.Bootstrap != true {
-		t.Errorf("%s is: %s", BOOTSTRAP, conf.Bootstrap)
+	if conf.Bootstrap != false {
+		t.Errorf("%s is: %t", BOOTSTRAP, conf.Bootstrap)
 	}
 }
