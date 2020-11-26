@@ -1,30 +1,50 @@
 package cfg
 
 import (
-	"fmt"
-	"github.com/Open-Twin/alexandria/cfg"
+	"os"
 	"testing"
 )
 
-func TestWelcome(t *testing.T) {
-	fmt.Print("HALLO?!")
-	conf := cfg.ReadConf()
-	fmt.Println(conf.Welcome)
-	if conf.Welcome != "Hello, I am a server." {
-		t.Errorf("Welcome displays is: %s", conf.Welcome)
+var conf Config
+
+func TestMain(m *testing.M) {
+	conf = ReadConf()
+	code := m.Run()
+	os.Exit(code)
+}
+
+func TestHttpAddr(t *testing.T) {
+	if conf.HttpAddr != "127.0.0.1" {
+		t.Errorf("%s is: %s", HTTP_ADDR, conf.HttpAddr)
 	}
 }
 
-func TestExampleTimeout(t *testing.T) {
-	conf := cfg.ReadConf()
-	if conf.ExampleTimeout != 10 {
-		t.Errorf("ExampleTimeout is: %d", conf.ExampleTimeout)
+func TestRaftAddr(t *testing.T) {
+	if conf.RaftAddr != "127.0.0.1" {
+		t.Errorf("%s is: %s", RAFT_ADDR, conf.RaftAddr)
 	}
 }
 
-func TestEndpointPort(t *testing.T) {
-	conf := cfg.ReadConf()
-	if conf.EndpointPort != 1234 {
-		t.Errorf("EndpointPort ist: %d", conf.EndpointPort)
+func TestHttpPort(t *testing.T) {
+	if conf.HttpPort != 11000 {
+		t.Errorf("%s is: %s", HTTP_PORT, conf.HttpPort)
+	}
+}
+
+func TestRaftPort(t *testing.T) {
+	if conf.RaftPort != 12000 {
+		t.Errorf("%s is: %s", RAFT_PORT, conf.RaftPort)
+	}
+}
+
+func TestRaftDataDir(t *testing.T) {
+	if conf.RaftAddr != "/usr/bruh/awesomefolder" {
+		t.Errorf("%s is: %s", RAFT_DATA_DIR, conf.RaftDataDir)
+	}
+}
+
+func TestBootstrap(t *testing.T) {
+	if conf.Bootstrap != true {
+		t.Errorf("%s is: %s", BOOTSTRAP, conf.Bootstrap)
 	}
 }
