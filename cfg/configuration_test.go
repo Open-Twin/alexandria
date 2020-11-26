@@ -6,7 +6,7 @@ import (
 )
 
 // Use following environment variable configuration for testing:
-// HTTP_ADDR=127.0.0.1;RAFT_ADDR=127.0.0.1;HTTP_PORT=11000;RAFT_PORT=12000;RAFT_DATA_DIR=/usr/bruh/awesomefolder;BOOTSTRAP=True
+// HOSTNAME=peter;UDP_PORT=1234;TCP_PORT=4321;LOG_LEVEL=1;HTTP_ADDR=127.0.0.1;RAFT_ADDR=127.0.0.1;HTTP_PORT=11000;RAFT_PORT=12000;RAFT_DATA_DIR=/usr/bruh/awesomefolder;BOOTSTRAP=True
 
 var conf Config
 
@@ -14,6 +14,30 @@ func TestMain(m *testing.M) {
 	conf = ReadConf()
 	code := m.Run()
 	os.Exit(code)
+}
+
+func TestHostname(t *testing.T) {
+	if conf.Hostname != "peter" {
+		t.Errorf("%s is: %s", HTTP_ADDR, conf.Hostname)
+	}
+}
+
+func TestUdpPort(t *testing.T) {
+	if conf.UdpPort != 1234 {
+		t.Errorf("%s is: %d", HTTP_ADDR, conf.UdpPort)
+	}
+}
+
+func TestTcpPort(t *testing.T) {
+	if conf.TcpPort != 4321 {
+		t.Errorf("%s is: %d", HTTP_ADDR, conf.TcpPort)
+	}
+}
+
+func TestLoglevel(t *testing.T) {
+	if conf.LogLevel != 1 {
+		t.Errorf("%s is: %d", HTTP_ADDR, conf.LogLevel)
+	}
 }
 
 func TestHttpAddr(t *testing.T) {

@@ -10,6 +10,10 @@ import (
 
 // This constant saves the names of the environment variables
 const (
+	HOSTNAME      = "HOSTNAME"
+	UDP_PORT      = "UDP_PORT"
+	TCP_PORT      = "TCP_PORT"
+	LOG_LEVEL     = "LOG_LEVEL"
 	HTTP_ADDR     = "HTTP_ADDR"
 	RAFT_ADDR     = "RAFT_ADDR"
 	HTTP_PORT     = "HTTP_PORT"
@@ -22,6 +26,10 @@ const (
 
 // Struct that saves all the configured values
 type Config struct {
+	Hostname    string
+	UdpPort     int64
+	TcpPort     int64
+	LogLevel    int64
 	HttpAddr    string
 	RaftAddr    string
 	HttpPort    int64
@@ -36,6 +44,30 @@ func ReadConf() Config {
 	fmt.Println("Reading config started")
 
 	cfg := Config{}
+
+	hostname := os.Getenv(HOSTNAME)
+	if hostname == "" {
+		log.Fatalf(ERROR_MSG, HOSTNAME)
+	}
+	cfg.Hostname = hostname
+
+	udp_port, err := strconv.ParseInt(os.Getenv(UDP_PORT), 10, 64)
+	if err != nil {
+		log.Fatalf(ERROR_MSG, HTTP_PORT)
+	}
+	cfg.UdpPort = udp_port
+
+	tcp_port, err := strconv.ParseInt(os.Getenv(TCP_PORT), 10, 64)
+	if err != nil {
+		log.Fatalf(ERROR_MSG, HTTP_PORT)
+	}
+	cfg.TcpPort = tcp_port
+
+	log_level, err := strconv.ParseInt(os.Getenv(LOG_LEVEL), 10, 64)
+	if err != nil {
+		log.Fatalf(ERROR_MSG, HTTP_PORT)
+	}
+	cfg.LogLevel = log_level
 
 	http_addr := os.Getenv(HTTP_ADDR)
 	if http_addr == "" {
