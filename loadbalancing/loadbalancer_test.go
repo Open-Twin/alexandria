@@ -6,17 +6,51 @@ import (
 	"testing"
 )
 
+func TestAddServer(t *testing.T) {
+	lb := StartAlexandriaLoadbalancer(1212)
+	lb.AddDns("192.168.0.1")
+}
+
+func TestRemoveServer(t *testing.T) {
+	lb := StartAlexandriaLoadbalancer(1212)
+	lb.AddDns("192.168.0.1")
+	lb.RemoveDns("192.168.0.1")
+}
+
+func TestRemoveNonExistent(t *testing.T) {
+	lb := StartAlexandriaLoadbalancer(1212)
+	lb.RemoveDns("192.168.0.1")
+}
+
 func TestResponse(t *testing.T) {
-	launchTestserver()
-	loadbalanceAlexandriaNodes()
-	if true {
-		t.Errorf("Welcome displays is: %s", "lmao")
+	lb := StartAlexandriaLoadbalancer(1212)
+	lb.AddDns("127.0.0.1")
+
+	startDnsServer(t)
+	sendRequest("127.0.0.1:1212", t)
+}
+
+func TestNoServerAdded(t *testing.T) {
+	StartAlexandriaLoadbalancer(1212)
+
+	startDnsServer(t)
+	sendRequest("127.0.0.1:1212", t)
+}
+
+func sendRequest(ip string, t *testing.T) {
+	c, err := net.Dial("tcp", ip)
+	if err != nil {
+		t.Errorf("Error on connecting to loadbalancer: %s", err)
+	}
+	_, err = fmt.Fprintf(c, "Hallo")
+	if err != nil {
+		t.Errorf("Error on sending message: %s", err)
 	}
 }
 
-func launchTestserver() {
+func startDnsServer(t *testing.T) {
 	// Auf Port 8333 hören
-	connect, err := net.ListenPacket("udp", ":8333")
+	connect, err := net.ListenPacket("udp", ":1212")
 
 	if err != nil {
 		fmt.Println(err)
@@ -32,7 +66,7 @@ func launchTestserver() {
 			break
 		}
 
-		fmt.Println("Message from :", addr)
+		t.Logf("Message from client: %s", addr)
 
 		// Send answer in new thread
 		go serve(connect, addr, []byte("this is the dns speaking. over"))
