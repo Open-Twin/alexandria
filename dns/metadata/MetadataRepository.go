@@ -9,7 +9,6 @@ package metadata
 import (
 	"errors"
 	"sync"
-	"time"
 )
 
 // Creating the MetadataRepository interface which predefines the included functions of this class
@@ -21,69 +20,67 @@ type MetadataRepository interface {
 	Delete(service, ip, key string) error
 }
 
-// Predefined variables for the following global one
+// Predefined variables for the usage in this class
 type service = string
 type ip = string
 type key = string
 type value = string
 
-// Global metadata variable for this class
-var metadata = make(map[service]map[ip]map[key]value)
-var metadataMu = &sync.RWMutex{}
-
-
-// Creating a structure for the metadata
+// Creating a structure for the metadata containing the necessary variables
 type InMemoryStorageRepository struct {
-	Location string `json:"Location"`
-	Sensortype string `json:"Sensortype"`
-	Registered time.Time `json:"Registered"`
-	IsActive bool `json:"IsActive"`
+	// Global metadata variable for this class
+	metadata map[service]map[ip]map[key]value
+	metadataMu sync.RWMutex
 }
 
 // Adding the exists function, which basically just checks if an entry for this specific service exists
-func (im *InMemoryStorageRepository) Exists(service, ip, key string) bool {
-	if metadata[service][ip][key] != "" {
+func (imsp *InMemoryStorageRepository) Exists(service, ip, key string) bool {
+	if imsp.metadata[service][ip][key] != "" {
 		return true
 	}
 	return false
 }
 
 // Adding the create function, which basically just adds a new entry to the map
-func (im *InMemoryStorageRepository) Create(service, ip, key, value string) error {
-	metadataMu.Lock()
-	metadata[service][ip][key] = value
-	metadataMu.Unlock()
-	if !im.Exists(service, ip, key) {
+func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) error {
+	imsp.metadataMu.Lock()
+	defer imsp.metadataMu.Unlock()
+	imsp.metadata[service][ip][key] = value
+	if !imsp.Exists(service, ip, key) {
 		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 	}
-	return errors.New("success: a new entry was made")
+	return nil
 }
 
-func (im *InMemoryStorageRepository) Read(service, ip, key string) (string, error) {
-	metadataMu.RLock()
-	defer metadataMu.RUnlock()
-	if !im.Exists(service, ip, key) {
-		return metadata[service][ip][key], errors.New("no entry: as it looks like for this specific service no entry was made")
+
+// Adding the read function, which basically just returns the specific value of the given service as a string
+func (imsp *InMemoryStorageRepository) Read(service, ip, key string) (string, error) {
+	imsp.metadataMu.RLock()
+	defer imsp.metadataMu.RUnlock()
+	if !imsp.Exists(service, ip, key) {
+		return imsp.metadata[service][ip][key], errors.New("no entry: as it looks like for this specific service no entry was made")
 	}
-	return metadata[service][ip][key], errors.New("success: there was an existing entry")
+	return imsp.metadata[service][ip][key], nil
 }
 
-func (im *InMemoryStorageRepository) Update(service, ip, key, value string) error {
-	metadataMu.Lock()
-	metadata[service][ip][key] = value
-	metadataMu.Unlock()
-	if !im.Exists(service, ip, key) {
+// Adding the update function, which basically just replaces a specific value of the given service with the new given value
+func (imsp *InMemoryStorageRepository) Update(service, ip, key, value string) error {
+	imsp.metadataMu.Lock()
+	defer imsp.metadataMu.Unlock()
+	imsp.metadata[service][ip][key] = value
+	if !imsp.Exists(service, ip, key) {
 		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 	}
-	return errors.New("success: the entry was updated")
+	return nil
 }
 
-func (im *InMemoryStorageRepository) Delete(service, ip, key string) error {
-	metadataMu.Lock()
-	delete(metadata[service][ip], key)
-	metadataMu.Unlock()
-	if im.Exists(service, ip, key) {
+// Adding the delete function, which basically just removes an specific entry (= the given service)
+func (imsp *InMemoryStorageRepository) Delete(service, ip, key string) error {
+	imsp.metadataMu.Lock()
+	defer imsp.metadataMu.Unlock()
+	delete(imsp.metadata[service][ip], key)
+	if imsp.Exists(service, ip, key) {
 		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 	}
-	return errors.New("success: the entry was deleted")
+	return nil
 }
