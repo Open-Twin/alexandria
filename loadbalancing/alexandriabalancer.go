@@ -2,42 +2,67 @@ package loadbalancing
 
 import (
 	"fmt"
+	"github.com/Open-Twin/alexandria/communication"
 	"net"
-	//"github.com/Open-Twin/alexandria/communication"
-	"../communication"
 )
 
-var dnsservers = [2]string{"192.168.0.160", "192.168.0.163"}
-var pointer = 0
-var dnsport = 8333
+type AlexandriaBalancer struct {
+	dnsservers []string
+	pointer    int
+	dnsport    int
+}
 
-func loadbalanceAlexandriaNodes() {
+func StartAlexandriaLoadbalancer(dnsport int) AlexandriaBalancer {
+	lb := AlexandriaBalancer{[]string{}, 0, dnsport}
+
 	udpServer := communication.UDPServer{
 		Address: []byte{0, 0, 0, 0},
 		Port:    dnsport,
 	}
+
 	go udpServer.StartUDP(func(addr net.Addr, msg []byte) []byte {
-		go forwardMsg(msg)
+		go lb.forwardMsg(msg)
 		return []byte("dns forwarded")
 	})
+
+	return lb
 }
 
-func nextAddr() string {
-	// Implementation of the loadbalancing
-	pointer++
-	if pointer > len(dnsservers) {
-		pointer = 0
+func (l AlexandriaBalancer) AddDns(dnsIp string) {
+	l.dnsservers = append(l.dnsservers, dnsIp)
+}
+
+func (l AlexandriaBalancer) RemoveDns(dnsIp string) {
+	index := -1
+	// search for item in list
+	for i := 0; i < len(l.dnsservers); i++ {
+		if l.dnsservers[i] == dnsIp {
+			index = i
+			i = len(l.dnsservers)
+		}
 	}
 
-	address := dnsservers[pointer]
+	if index != -1 {
+		l.dnsservers = append(l.dnsservers[:index], l.dnsservers[index:]...)
+	}
+}
+
+func (l AlexandriaBalancer) nextAddr() string {
+	// Implementation of the loadbalancing
+	l.pointer++
+	if l.pointer > len(l.dnsservers) {
+		l.pointer = 0
+	}
+
+	address := l.dnsservers[l.pointer]
 	//adrentik := net.IPAddr{IP: net.ParseIP(address + string(dnsport))}
 	//return &adrentik
 	return address
 }
 
-func forwardMsg(msg []byte) {
-	adrentik := nextAddr()
-	dnsConn, err := net.Dial("udp", adrentik+":"+string(dnsport))
+func (l AlexandriaBalancer) forwardMsg(msg []byte) {
+	adrentik := l.nextAddr()
+	dnsConn, err := net.Dial("udp", adrentik+":"+string(l.dnsport))
 	if err != nil {
 		fmt.Printf("We had an error.")
 	}
