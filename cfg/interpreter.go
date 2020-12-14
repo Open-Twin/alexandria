@@ -27,13 +27,13 @@ const (
 // Struct that saves all the configured values
 type Config struct {
 	Hostname    string
-	UdpPort     int64
-	TcpPort     int64
-	LogLevel    int64
+	UdpPort     int
+	TcpPort     int
+	LogLevel    int
 	HttpAddr    string
 	RaftAddr    string
-	HttpPort    int64
-	RaftPort    int64
+	HttpPort    int
+	RaftPort    int
 	RaftDataDir string
 	Bootstrap   bool
 }
@@ -51,19 +51,19 @@ func ReadConf() Config {
 	}
 	cfg.Hostname = hostname
 
-	udp_port, err := strconv.ParseInt(os.Getenv(UDP_PORT), 10, 64)
+	udp_port, err := strconv.Atoi(os.Getenv(UDP_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
 	cfg.UdpPort = udp_port
 
-	tcp_port, err := strconv.ParseInt(os.Getenv(TCP_PORT), 10, 64)
+	tcp_port, err := strconv.Atoi(os.Getenv(TCP_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
 	cfg.TcpPort = tcp_port
 
-	log_level, err := strconv.ParseInt(os.Getenv(LOG_LEVEL), 10, 64)
+	log_level, err := strconv.Atoi(os.Getenv(LOG_LEVEL))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
@@ -81,13 +81,13 @@ func ReadConf() Config {
 	}
 	cfg.RaftAddr = raft_addr
 
-	http_port, err := strconv.ParseInt(os.Getenv(HTTP_PORT), 10, 64)
+	http_port, err := strconv.Atoi(os.Getenv(HTTP_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
 	cfg.HttpPort = http_port
 
-	raft_port, err := strconv.ParseInt(os.Getenv(RAFT_PORT), 10, 64)
+	raft_port, err := strconv.Atoi(os.Getenv(RAFT_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, RAFT_PORT)
 	}
