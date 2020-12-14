@@ -62,11 +62,21 @@ func (l AlexandriaBalancer) nextAddr() string {
 
 func (l AlexandriaBalancer) forwardMsg(msg []byte) {
 	adrentik := l.nextAddr()
-	dnsConn, err := net.Dial("udp", adrentik+":"+string(l.dnsport))
+
+	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik)
+	if err != nil {
+		fmt.Printf("Problem")
+	}
+
+	target, err := net.DialUDP("udp", nil, receiverAddr)
+	if err != nil {
+		fmt.Printf("Problem")
+	}
+
+	_, err = target.WriteToUDP(msg, receiverAddr)
 	if err != nil {
 		fmt.Printf("We had an error.")
 	}
-	fmt.Fprintf(dnsConn, string(msg))
-	dnsConn.Close()
+
 	fmt.Print("Message forwareded to :", adrentik)
 }
