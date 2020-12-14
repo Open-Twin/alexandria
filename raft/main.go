@@ -6,12 +6,33 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 )
 
-func main(){
-	rawConfig := ReadRawConfig()
+func Main(){
+	//rawConfig := ReadRawConfig()
+
+	bind := os.Args[1]
+	join := os.Args[2]
+	raftport, erri := strconv.Atoi(os.Args[3])
+	httpport, erri := strconv.Atoi(os.Args[4])
+	joinport, erri := strconv.Atoi(os.Args[5])
+	bootstrap, erri := strconv.ParseBool(os.Args[6])
+	if erri != nil {
+
+	}
+	rawConfig := RawConfig{
+		BindAddress: bind,
+		JoinAddress: join,
+		RaftPort: raftport,
+		HTTPPort: httpport,
+		JoinPort: joinport,
+		DataDir: "./raft/test",
+		Bootstrap: bootstrap,
+	}
 	config, err := rawConfig.ValidateConfig()
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", err)
 		os.Exit(1)
@@ -19,7 +40,7 @@ func main(){
 	raftLogger := log.New(os.Stdout,"raft",log.Ltime)
 	raftNode, err2 := NewNode(config, raftLogger)
 	if err2 != nil {
-		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err)
+		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err2)
 		os.Exit(1)
 	}
 
