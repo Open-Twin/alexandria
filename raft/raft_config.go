@@ -3,14 +3,15 @@ package raft
 import (
 	"gopkg.in/go-playground/validator.v9"
 	"net"
-	"github.com/Open-Twin/alexandria/cfg"
+	"strconv"
 )
 
 type RawConfig struct {
 	BindAddress string `validate:"required,ipv4"`
-	JoinAddress string `validate:"required,ipv4"`
+	JoinAddress string `validate:"omitempty,ipv4"`
 	RaftPort    int `validate:"required,max=65536,min=1"`
 	HTTPPort    int `validate:"required,max=65536,min=1"`
+	JoinPort	int `validate:"required_with=JoinAddress,max=65536,min=1"`
 	DataDir     string `validate:"required,dir"`
 	Bootstrap   bool
 }
@@ -21,7 +22,7 @@ type Config struct {
 	DataDir     string
 	Bootstrap   bool
 }
-func ReadRawConfig() RawConfig{
+/*func ReadRawConfig() RawConfig{
 	rawConf := cfg.readConfig()
 	return RawConfig{
 		BindAddress: rawConf.BindAddress,
@@ -31,7 +32,7 @@ func ReadRawConfig() RawConfig{
 		DataDir: rawConf.DataDir,
 		Bootstrap: rawConf.Bootstrap,
 	}
-}
+}*/
 /**
  * This method validates the raw config and returns the final config
  */
@@ -62,11 +63,17 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 		IP: bindAddr,
 		Port: rawConfig.HTTPPort,
 	}
+
+	//create new joinaddr from joinaddr and joinport
+	joinAddr := ""
+	if rawConfig.JoinAddress != "" {
+		joinAddr = rawConfig.JoinAddress + ":" + strconv.Itoa(rawConfig.JoinPort)
+	}
 	//create config
 	config := &Config{
 		RaftAddress: raftAddr,
 		HTTPAddress: httpAddr,
-		JoinAddress: rawConfig.JoinAddress,
+		JoinAddress: joinAddr,
 		DataDir:     rawConfig.DataDir,
 		Bootstrap:   rawConfig.Bootstrap,
 	}

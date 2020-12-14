@@ -5,6 +5,7 @@ import (
 	bolt "github.com/hashicorp/raft-boltdb"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -15,12 +16,13 @@ type node struct {
 	config   *Config
 	raftNode *raft.Raft
 	fsm      *fsm
-	log      *log.Logger
+	logger      *log.Logger
 }
-func NewNode(config *Config, log *log.Logger) (*node, error){
+func NewNode(config *Config, logger *log.Logger) (*node, error){
 
 	raftConfig := raft.DefaultConfig()
-
+	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
+	//raftConfig.Logger = log.New(logger, "", 0)
 	fsm := &fsm{
 		stateValue : 0,
 	}
@@ -38,8 +40,8 @@ func NewNode(config *Config, log *log.Logger) (*node, error){
 	if err != nil {
 		return nil, err
 	}
-	transport, err := newTransport(config, log)
-	if err!= nil {
+	transport, err := newTransport(config, logger)
+	if err != nil {
 		return nil, err
 	}
 	raftNode, err := raft.NewRaft(raftConfig,fsm, logStore, stableStore, snapshotStore, transport)
@@ -60,7 +62,7 @@ func NewNode(config *Config, log *log.Logger) (*node, error){
 	return &node{
 		config:   config,
 		raftNode: raftNode,
-		log:      log,
+		logger:      logger,
 		fsm:      fsm,
 	}, nil
 }
@@ -69,7 +71,8 @@ func newTransport(config *Config, logger *log.Logger) (*raft.NetworkTransport, e
 	if err != nil {
 		return nil, err
 	}
-	transport, err := raft.NewTCPTransport(address.String(), config.HTTPAddress, 3, 10*time.Second, logger)
+	//logger statt stdout
+	transport, err := raft.NewTCPTransport(address.String(), config.HTTPAddress, 3, 10*time.Second, os.Stdout)
 	if err != nil {
 		return nil, err
 	}
