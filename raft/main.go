@@ -6,14 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
 )
 
 func Main(){
-	//rawConfig := ReadRawConfig()
+	rawConfig := ReadRawConfig()
 
-	bind := os.Args[1]
+	/*bind := os.Args[1]
 	join := os.Args[2]
 	raftport, erri := strconv.Atoi(os.Args[3])
 	httpport, erri := strconv.Atoi(os.Args[4])
@@ -30,7 +29,7 @@ func Main(){
 		JoinPort: joinport,
 		DataDir: "./raft/test",
 		Bootstrap: bootstrap,
-	}
+	}*/
 	config, err := rawConfig.ValidateConfig()
 
 	if err != nil {
