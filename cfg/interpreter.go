@@ -18,6 +18,7 @@ const (
 	RAFT_ADDR     = "RAFT_ADDR"
 	HTTP_PORT     = "HTTP_PORT"
 	RAFT_PORT     = "RAFT_PORT"
+	JOIN_PORT     = "JOIN_PORT"
 	RAFT_DATA_DIR = "RAFT_DATA_DIR"
 	BOOTSTRAP     = "BOOTSTRAP"
 
@@ -34,6 +35,7 @@ type Config struct {
 	RaftAddr    string
 	HttpPort    int
 	RaftPort    int
+	JoinPort	int
 	RaftDataDir string
 	Bootstrap   bool
 }
@@ -70,9 +72,9 @@ func ReadConf() Config {
 	cfg.LogLevel = log_level
 
 	http_addr := os.Getenv(HTTP_ADDR)
-	if http_addr == "" {
+	/*if http_addr == "" {
 		log.Fatalf(ERROR_MSG, HTTP_ADDR)
-	}
+	}*/
 	cfg.HttpAddr = http_addr
 
 	raft_addr := os.Getenv(RAFT_ADDR)
@@ -92,6 +94,12 @@ func ReadConf() Config {
 		log.Fatalf(ERROR_MSG, RAFT_PORT)
 	}
 	cfg.RaftPort = raft_port
+
+	join_port, err := strconv.Atoi(os.Getenv(JOIN_PORT))
+	if err != nil {
+		log.Fatalf(ERROR_MSG, JOIN_PORT)
+	}
+	cfg.JoinPort = join_port
 
 	raft_data_dir := os.Getenv(RAFT_DATA_DIR)
 	if raft_data_dir == "" {
