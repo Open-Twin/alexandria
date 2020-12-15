@@ -12,10 +12,11 @@ type RawConfig struct {
 	JoinAddress string `validate:"omitempty,ipv4"`
 	RaftPort    int `validate:"required,max=65536,min=1"`
 	HTTPPort    int `validate:"required,max=65536,min=1"`
-	JoinPort	int `validate:"required_with=JoinAddress,max=65536,min=1"`
+	JoinPort	int `validate:"max=65536,min=1"`
 	DataDir     string `validate:"required,dir"`
 	Bootstrap   bool
 }
+//required_with=JoinAddress,
 type Config struct {
 	RaftAddress net.Addr	//BindAddress + Raft Port
 	HTTPAddress net.Addr	//BindAddress + HTTP Port
@@ -31,6 +32,7 @@ func ReadRawConfig() RawConfig{
 		JoinAddress: rawConf.HttpAddr,
 		RaftPort: rawConf.RaftPort,
 		HTTPPort: rawConf.HttpPort,
+		JoinPort: rawConf.JoinPort,
 		DataDir: rawConf.RaftDataDir,
 		Bootstrap: rawConf.Bootstrap,
 	}
