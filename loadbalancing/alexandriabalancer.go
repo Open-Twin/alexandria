@@ -6,6 +6,8 @@ import (
 	"net"
 )
 
+//TODO: Comments and Multithreading Support
+
 type AlexandriaBalancer struct {
 	dnsservers []string
 	pointer    int
@@ -55,8 +57,6 @@ func (l AlexandriaBalancer) nextAddr() string {
 	}
 
 	address := l.dnsservers[l.pointer]
-	//adrentik := net.IPAddr{IP: net.ParseIP(address + string(dnsport))}
-	//return &adrentik
 	return address
 }
 
@@ -65,18 +65,18 @@ func (l AlexandriaBalancer) forwardMsg(msg []byte) {
 
 	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik)
 	if err != nil {
-		fmt.Printf("Problem")
+		fmt.Printf("Error on resolving client address : %s", err)
 	}
 
 	target, err := net.DialUDP("udp", nil, receiverAddr)
 	if err != nil {
-		fmt.Printf("Problem")
+		fmt.Printf("Error on establishing client connection: %s", err)
 	}
 
 	_, err = target.WriteToUDP(msg, receiverAddr)
 	if err != nil {
-		fmt.Printf("We had an error.")
+		fmt.Printf("Error on sending message to client: %s", err)
 	}
 
-	fmt.Print("Message forwareded to :", adrentik)
+	fmt.Printf("Message forwareded to: %s", adrentik)
 }
