@@ -49,6 +49,10 @@ func (l AlexandriaBalancer) RemoveDns(dnsIp string) {
 	}
 }
 
+func (l AlexandriaBalancer) GetDnsEntries() []string {
+	return l.dnsservers
+}
+
 func (l AlexandriaBalancer) nextAddr() string {
 	// Implementation of the loadbalancing
 	l.pointer++
