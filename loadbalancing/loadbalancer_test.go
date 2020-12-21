@@ -68,6 +68,19 @@ func equal(a, b []string) bool {
 func TestRemoveServer(t *testing.T) {
 	lb := StartAlexandriaLoadbalancer(1212)
 	lb.AddDns("192.168.0.1")
+	lb.AddDns("192.168.0.2")
+	lb.AddDns("192.168.0.3")
+	lb.AddDns("192.168.0.4")
+	lb.AddDns("192.168.0.5")
+	lb.RemoveDns("192.168.0.4")
+	if !equal(lb.GetDnsEntries(), []string{"192.168.0.1", "192.168.0.2", "192.168.0.3", "192.168.0.5"}) {
+		t.Errorf("Wrong entries after removing dns: %s", lb.GetDnsEntries())
+	}
+}
+
+func TestRemoveOneServerInList(t *testing.T) {
+	lb := StartAlexandriaLoadbalancer(1212)
+	lb.AddDns("192.168.0.1")
 	lb.RemoveDns("192.168.0.1")
 	if !equal(lb.GetDnsEntries(), []string{}) {
 		t.Errorf("Wrong entries after removing dns: %s", lb.GetDnsEntries())
@@ -98,7 +111,7 @@ func sendRequest(ip string, t *testing.T) string {
 		},
 	}
 	answer, err := r.LookupHost(context.Background(), "www.example.com")
-	if err!= nil {
+	if err != nil {
 		t.Errorf("Bla: %s", err)
 	}
 	fmt.Println(answer)

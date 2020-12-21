@@ -14,7 +14,7 @@ type AlexandriaBalancer struct {
 	dnsport    int
 }
 
-func StartAlexandriaLoadbalancer(dnsport int) AlexandriaBalancer {
+func StartAlexandriaLoadbalancer(dnsport int) *AlexandriaBalancer {
 	lb := AlexandriaBalancer{[]string{}, 0, dnsport}
 
 	udpServer := communication.UDPServer{
@@ -27,14 +27,14 @@ func StartAlexandriaLoadbalancer(dnsport int) AlexandriaBalancer {
 		return []byte("dns forwarded")
 	})
 
-	return lb
+	return &lb
 }
 
-func (l AlexandriaBalancer) AddDns(dnsIp string) {
+func (l *AlexandriaBalancer) AddDns(dnsIp string) {
 	l.dnsservers = append(l.dnsservers, dnsIp)
 }
 
-func (l AlexandriaBalancer) RemoveDns(dnsIp string) {
+func (l *AlexandriaBalancer) RemoveDns(dnsIp string) {
 	index := -1
 	// search for item in list
 	for i := 0; i < len(l.dnsservers); i++ {
@@ -45,15 +45,15 @@ func (l AlexandriaBalancer) RemoveDns(dnsIp string) {
 	}
 
 	if index != -1 {
-		l.dnsservers = append(l.dnsservers[:index], l.dnsservers[index:]...)
+		l.dnsservers = append(l.dnsservers[:index], l.dnsservers[index+1:]...)
 	}
 }
 
-func (l AlexandriaBalancer) GetDnsEntries() []string {
+func (l *AlexandriaBalancer) GetDnsEntries() []string {
 	return l.dnsservers
 }
 
-func (l AlexandriaBalancer) nextAddr() string {
+func (l *AlexandriaBalancer) nextAddr() string {
 	// Implementation of the loadbalancing
 	l.pointer++
 	if l.pointer > len(l.dnsservers) {
@@ -64,7 +64,7 @@ func (l AlexandriaBalancer) nextAddr() string {
 	return address
 }
 
-func (l AlexandriaBalancer) forwardMsg(msg []byte) {
+func (l *AlexandriaBalancer) forwardMsg(msg []byte) {
 	adrentik := l.nextAddr()
 
 	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik)
