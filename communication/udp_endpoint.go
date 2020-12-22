@@ -65,6 +65,7 @@ func handleData(n int, buffer []byte, handler UDPHandler, addr *net.UDPAddr, con
 	log.Printf("\n--------------\n")
 	log.Printf("packet-received: bytes=%d from=%s over udp\n",
 		n, addr.String())
+	fmt.Println(buffer)
 	//log.Println("from", addr, "-", buffer[:n])
 	log.Printf("\n--------------\n")
 

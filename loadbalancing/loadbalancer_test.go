@@ -1,13 +1,11 @@
 package loadbalancing
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -93,15 +91,17 @@ func TestRemoveNonExistent(t *testing.T) {
 }
 
 func TestStartServer(t *testing.T) {
-	StartAlexandriaLoadbalancer(1212)
-	answer := sendRequest("172.0.0.1:1212", t)
+	lb := StartAlexandriaLoadbalancer(1212)
+	lb.AddDns("127.0.0.1:8333")
+	answer := sendRequest("127.0.0.1:1212", t)
+	fmt.Printf("Champagner: %s", answer)
 	if !strings.HasPrefix(string(answer), "Message fowarded to: ") {
 		t.Errorf("Wrong answer from dns-server: %s", string(answer))
 	}
 }
 
 func sendRequest(ip string, t *testing.T) string {
-	r := &net.Resolver{
+	/*r := &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 			d := net.Dialer{
@@ -111,17 +111,24 @@ func sendRequest(ip string, t *testing.T) string {
 		},
 	}
 	answer, err := r.LookupHost(context.Background(), "www.example.com")
+	*/
+
+	receiverAddr, _ := net.ResolveUDPAddr("udp", ip)
+	target, _ := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+	a, err := target.WriteToUDP([]byte("dejan.com"), receiverAddr)
+	fmt.Printf("Holandese: %s", string(a))
+
 	if err != nil {
 		t.Errorf("Bla: %s", err)
 	}
-	fmt.Println(answer)
 
-	return answer[0]
+	return string(a)
+	//return answer[0]
 }
 
 func TestResponse(t *testing.T) {
 	lb := StartAlexandriaLoadbalancer(1212)
-	lb.AddDns("127.0.0.1:83333")
+	lb.AddDns("127.0.0.1:8333")
 
 	answer := string(sendRequest("127.0.0.1:1212", t))
 	if answer != "this is the dns speaking. over" {
