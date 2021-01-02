@@ -16,6 +16,6 @@ func sendLoad(w http.ResponseWriter, r *http.Request) {
 }
 
 func collectData() []byte {
-	randLoad := string(rand.Intn(99))
+	randLoad := fmt.Sprint(rand.Intn(99))
 	return []byte(randLoad)
 }
