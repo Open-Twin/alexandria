@@ -47,7 +47,7 @@ func TestRemoveOneServerInList(t *testing.T) {
 	hc.AddNode("192.168.0.1")
 	hc.RemoveNode("192.168.0.1")
 	if !equal(hc.nodes, []Node{}) {
-		t.Errorf("Wrong entries after removing dns: %s", hc.nodes)
+		t.Errorf("Wrong entries after removing dns: %v", hc.nodes)
 	}
 }
 
