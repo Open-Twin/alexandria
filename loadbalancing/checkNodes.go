@@ -26,7 +26,7 @@ func (hc *HealthCheck) ScheduleHealthChecks(interval int64) {
 }
 
 func (hc *HealthCheck) loopNodes() {
-	for i, _ := range hc.nodes {
+	for i := range hc.nodes {
 		n := &hc.nodes[i]
 		n.sendCheck()
 	}
@@ -49,5 +49,25 @@ func (hc *HealthCheck) AddNode(node string) {
 }
 
 func (hc *HealthCheck) RemoveNode(node string) {
-	// TODO
+	index := -1
+	// search for item in list
+	for i, n := range hc.nodes {
+		if n.ip == node {
+			index = i
+			break
+		}
+	}
+
+	if index != -1 {
+		hc.nodes = append(hc.nodes[:index], hc.nodes[index+1:]...)
+	}
+}
+
+func (hc *HealthCheck) IsHealthy(node string) bool {
+	for _, n := range hc.nodes {
+		if n.ip == node {
+			return n.healthy
+		}
+	}
+	return false
 }
