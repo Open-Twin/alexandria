@@ -6,8 +6,9 @@ import (
 	"net/http"
 )
 
-func startLoadReporting() {
+func StartLoadReporting() {
 	http.HandleFunc("/load", sendLoad)
+	go http.ListenAndServe(":8080", nil)
 	fmt.Println("Started reporting current server load")
 }
 

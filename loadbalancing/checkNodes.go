@@ -16,7 +16,7 @@ type Node struct {
 	healthy bool
 }
 
-func (hc HealthCheck) ScheduleHealthChecks(interval int64) {
+func (hc *HealthCheck) ScheduleHealthChecks(interval int64) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	go func() {
 		for range ticker.C {
@@ -25,27 +25,29 @@ func (hc HealthCheck) ScheduleHealthChecks(interval int64) {
 	}()
 }
 
-func (hc HealthCheck) loopNodes() {
-	for _, node := range hc.nodes {
-		node.sendCheck()
+func (hc *HealthCheck) loopNodes() {
+	for i, _ := range hc.nodes {
+		n := &hc.nodes[i]
+		n.sendCheck()
 	}
 }
 
-func (node Node) sendCheck() {
+func (node *Node) sendCheck() {
 	resp, err := http.Get("http://" + node.ip + ":8080/load")
 	if err != nil {
 		node.healthy = false
-		fmt.Printf("Node %s could not be reached: %s", node.ip, err)
+		fmt.Printf("Node %s could not be reached: %s\n", node.ip, err)
+		return
 	}
 	respBody, _ := ioutil.ReadAll(resp.Body)
 	node.healthy = true
-	fmt.Printf("Load received %v %%", respBody)
+	fmt.Printf("Load received %v %%\n", respBody)
 }
 
-func (hc *HealthCheck) AddNode(node Node) {
-	hc.nodes = append(hc.nodes, node)
+func (hc *HealthCheck) AddNode(node string) {
+	hc.nodes = append(hc.nodes, Node{node, false})
 }
 
-func (hc *HealthCheck) RemoveNode(node Node) {
+func (hc *HealthCheck) RemoveNode(node string) {
 	// TODO
 }
