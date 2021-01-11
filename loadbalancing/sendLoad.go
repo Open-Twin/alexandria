@@ -13,7 +13,9 @@ func StartLoadReporting() {
 }
 
 func sendLoad(w http.ResponseWriter, r *http.Request) {
-	w.Write(collectData())
+	load := collectData()
+	fmt.Printf("Sending current load to dns: %s\n", string(load))
+	w.Write(load)
 }
 
 func collectData() []byte {
