@@ -58,6 +58,7 @@ func NewNode(config *Config, logger *log.Logger) (*node, error){
 			},
 		}
 		raftNode.BootstrapCluster(configuration)
+		logger.Print("bootstrapping cluster")
 	}
 	return &node{
 		config:   config,

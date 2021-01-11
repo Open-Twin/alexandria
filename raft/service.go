@@ -2,10 +2,12 @@ package raft
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/hashicorp/raft"
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -19,15 +21,18 @@ type httpServer struct {
 func (server *httpServer) Start() {
 	server.logger.Printf("Starting server with address %v\n", server.address.String())
 
-	if err := http.ListenAndServe(server.address.String(), nil); err != nil {
+	if err := http.ListenAndServe(server.address.String(), server); err != nil {
 		server.logger.Fatal("Error running HTTP server")
 	}
 }
 
 func (server *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	if strings.Contains(r.URL.Path, "/key") {
+		fmt.Println("KEY REQUEST")
 		server.handleRequest(w, r)
 	} else if strings.Contains(r.URL.Path, "/join") {
+		fmt.Println("JOIN REQUEST")
 		server.handleJoin(w, r)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
@@ -74,6 +79,7 @@ func (server *httpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Got Post: "+strconv.Itoa(request.NewValue)))
 }
 
 func (server *httpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
