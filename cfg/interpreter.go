@@ -101,12 +101,12 @@ func ReadConf() Config {
 
 	bootstrap := os.Getenv(BOOTSTRAP)
 	bootstrap = strings.ToLower(bootstrap)
+	cfg.Bootstrap = false
 	if bootstrap == "true" {
 		cfg.Bootstrap = true
 	} else if bootstrap != "false" {
 		log.Fatalf(ERROR_MSG, BOOTSTRAP)
 	}
-	cfg.Bootstrap = false
 
 	fmt.Println("Reading config finished")
 	return cfg
