@@ -70,7 +70,7 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 
 	//create new joinaddr from joinaddr and joinport
 	joinAddr := ""
-	if rawConfig.JoinAddress != "" {
+	if rawConfig.JoinAddress != "" && rawConfig.JoinPort != 1  {
 		joinAddr = rawConfig.JoinAddress + ":" + strconv.Itoa(rawConfig.JoinPort)
 	}
 	//create config
