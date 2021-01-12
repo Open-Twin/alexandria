@@ -17,6 +17,7 @@ type httpServer struct {
 	address net.Addr
 	logger *log.Logger
 }
+
 /*
 Starts the webservice
  */
@@ -27,6 +28,7 @@ func (server *httpServer) Start() {
 		server.logger.Fatal("Error running HTTP server")
 	}
 }
+
 /*
 Differentiates between /key and /join requests and forwards them to
 the appropriate function
@@ -43,9 +45,10 @@ func (server *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
+
 /*
-Handles /key requests and differentiates between post and get
- */
+   Handles /key requests and differentiates between post and get
+*/
 func (server *httpServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -57,6 +60,7 @@ func (server *httpServer) handleRequest(w http.ResponseWriter, r *http.Request) 
 	}
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
+
 /*
 function for handling post requests
  */
@@ -90,6 +94,7 @@ func (server *httpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Got Post: "+strconv.Itoa(request.NewValue)))
 }
+
 /*
 function for handling get requests
  */
@@ -109,6 +114,7 @@ func (server *httpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(responseBytes)
 }
+
 /*
 handles a /join request and attempts to join the node
  */
