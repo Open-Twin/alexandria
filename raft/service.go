@@ -17,7 +17,9 @@ type httpServer struct {
 	address net.Addr
 	logger *log.Logger
 }
-
+/*
+Starts the webservice
+ */
 func (server *httpServer) Start() {
 	server.logger.Printf("Starting server with address %v\n", server.address.String())
 
@@ -25,7 +27,10 @@ func (server *httpServer) Start() {
 		server.logger.Fatal("Error running HTTP server")
 	}
 }
-
+/*
+Differentiates between /key and /join requests and forwards them to
+the appropriate function
+ */
 func (server *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if strings.Contains(r.URL.Path, "/key") {
@@ -38,7 +43,9 @@ func (server *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
-
+/*
+Handles /key requests and differentiates between post and get
+ */
 func (server *httpServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -50,7 +57,9 @@ func (server *httpServer) handleRequest(w http.ResponseWriter, r *http.Request) 
 	}
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
-
+/*
+function for handling post requests
+ */
 func (server *httpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) {
 	request := struct {
 		NewValue int `json:"newValue"`
@@ -81,7 +90,9 @@ func (server *httpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Got Post: "+strconv.Itoa(request.NewValue)))
 }
-
+/*
+function for handling get requests
+ */
 func (server *httpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
@@ -98,7 +109,9 @@ func (server *httpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(responseBytes)
 }
-
+/*
+handles a /join request and attempts to join the node
+ */
 func (server *httpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 	peerAddress := r.Header.Get("Peer-Address")
 	if peerAddress == "" {

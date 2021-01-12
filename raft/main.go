@@ -10,39 +10,22 @@ import (
 )
 
 func Main(){
+	//read config
 	rawConfig := ReadRawConfig()
-
-	/*bind := os.Args[1]
-	join := os.Args[2]
-	raftport, erri := strconv.Atoi(os.Args[3])
-	httpport, erri := strconv.Atoi(os.Args[4])
-	joinport, erri := strconv.Atoi(os.Args[5])
-	bootstrap, erri := strconv.ParseBool(os.Args[6])
-	if erri != nil {
-
-	}
-	rawConfig := RawConfig{
-		BindAddress: bind,
-		JoinAddress: join,
-		RaftPort: raftport,
-		HTTPPort: httpport,
-		JoinPort: joinport,
-		DataDir: "./raft/test",
-		Bootstrap: bootstrap,
-	}*/
+	//validate config
 	config, err := rawConfig.ValidateConfig()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", err)
 		os.Exit(1)
 	}
-	raftLogger := log.New(os.Stdout,"raft",log.Ltime)
+	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
 	raftNode, err2 := NewNode(config, raftLogger)
 	if err2 != nil {
 		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err2)
 		os.Exit(1)
 	}
-
+	//attempts to join a node if join address is given
 	if config.JoinAddress != "" {
 		go func() {
 			retryJoin := func() error {
@@ -72,8 +55,7 @@ func Main(){
 
 			for {
 				if err := retryJoin(); err != nil {
-					//logger.Error().Err(err).Str("component", "join").Msg("Error joining cluster")
-					fmt.Println("Error joining cluster")
+					raftLogger.Print("error joining cluster")
 					time.Sleep(1 * time.Second)
 				} else {
 					break
@@ -81,12 +63,13 @@ func Main(){
 			}
 		}()
 	}
-	httpLogger := *log.New(os.Stdout,"http",log.Ltime)
+	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
 	service := &httpServer{
 		node: raftNode,
 		address: config.HTTPAddress,
 		logger: &httpLogger,
 	}
+	//starts the http service
 	service.Start()
 }
 

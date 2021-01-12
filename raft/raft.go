@@ -18,6 +18,9 @@ type node struct {
 	fsm      *fsm
 	logger      *log.Logger
 }
+/*
+creates and returns a new node
+ */
 func NewNode(config *Config, logger *log.Logger) (*node, error){
 
 	raftConfig := raft.DefaultConfig()
@@ -67,6 +70,9 @@ func NewNode(config *Config, logger *log.Logger) (*node, error){
 		fsm:      fsm,
 	}, nil
 }
+/*
+creates a new tcp transport for raft
+ */
 func newTransport(config *Config, logger *log.Logger) (*raft.NetworkTransport, error){
 	address, err := net.ResolveTCPAddr("tcp",config.RaftAddress.String())
 	if err != nil {
