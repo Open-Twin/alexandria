@@ -19,13 +19,13 @@ type node struct {
 	logger      *log.Logger
 }
 /*
-creates and returns a new node
+creates and returns a new Node
  */
 func NewNode(config *Config, logger *log.Logger) (*node, error){
 
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
-	//raftConfig.Logger = log.New(logger, "", 0)
+	//raftConfig.Logger = log.New(Logger, "", 0)
 	fsm := &fsm{
 		stateValue : 0,
 	}
@@ -78,7 +78,7 @@ func newTransport(config *Config, logger *log.Logger) (*raft.NetworkTransport, e
 	if err != nil {
 		return nil, err
 	}
-	//logger statt stdout
+	//Logger statt stdout
 	transport, err := raft.NewTCPTransport(address.String(), config.HTTPAddress, 3, 10*time.Second, os.Stdout)
 	if err != nil {
 		return nil, err

@@ -19,7 +19,7 @@ type event struct{
 // Apply log is invoked once a log entry is committed.
 // It returns a value which will be made available in the
 // ApplyFuture returned by Raft.Apply method if that
-// method was called on the same Raft node as the FSM.
+// method was called on the same Raft Node as the FSM.
 func (fsm *fsm) Apply(logEntry *raft.Log) interface{} {
 	var e event
 	if err := json.Unmarshal(logEntry.Data, &e); err != nil {

@@ -1,36 +1,48 @@
-package raft
+package raft_test
 
 import (
 "encoding/json"
-	"fmt"
+	"github.com/Open-Twin/alexandria/raft"
 	"log"
-"net/http"
+	"net"
+	"net/http"
 "net/http/httptest"
-	"net/url"
 	"os"
 "strings"
+
 "testing"
-	"time"
 )
 
-var s httpServer
+var s raft.HttpServer
 
 /*
 Entrypoint for the tests
 */
 func TestMain(m *testing.M) {
-
 	logger := log.New(os.Stdout,"",log.Ltime)
-	//establishes connection to database
-	database, err := src.DbConn()
-	if err != nil {
-		log.Fatal("Database connection error: "+err.Error())
-	}
-	log.Print("Database running")
 
-	s = httpServer{
-		Router: router,
-		Database: database,
+	raftaddr := &net.TCPAddr{
+		IP: net.ParseIP("127.0.0.1"),
+		Port: 7000,
+	}
+	httpaddr := &net.TCPAddr{
+		IP: net.ParseIP("127.0.0.1"),
+		Port: 8000,
+	}
+	conf := &raft.Config{
+		RaftAddress: raftaddr,
+		HTTPAddress: httpaddr,
+		JoinAddress: "127.0.0.1:8000",
+		DataDir: "./raft/test",
+		Bootstrap: false,
+	}
+	node, err := raft.NewNode(conf, logger)
+	if err != nil{
+		log.Fatal("Preparing tests failed: "+err.Error())
+	}
+	s = raft.HttpServer{
+		Node: node,
+		Address: httpaddr,
 		Logger: logger,
 	}
 	s.Start()

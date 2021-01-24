@@ -22,11 +22,11 @@ func Main(){
 	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
 	raftNode, err2 := NewNode(config, raftLogger)
 	if err2 != nil {
-		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err2)
+		fmt.Fprintf(os.Stderr, "Error configuring Node: %s", err2)
 		os.Exit(1)
 	}
 
-	//attempts to join a node if join address is given
+	//attempts to join a Node if join Address is given
 	if config.JoinAddress != "" {
 		go func() {
 			retryJoin := func() error {
@@ -57,7 +57,7 @@ func Main(){
 			for {
 				if err := retryJoin(); err != nil {
 					raftLogger.Print("error joining cluster")
-					//logger.Error().Err(err).Str("component", "join").Msg("Error joining cluster")
+					//Logger.Error().Err(err).Str("component", "join").Msg("Error joining cluster")
 					time.Sleep(1 * time.Second)
 				} else {
 					break
@@ -67,10 +67,10 @@ func Main(){
 	}
 
 	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
-	service := &httpServer{
-		node: raftNode,
-		address: config.HTTPAddress,
-		logger: &httpLogger,
+	service := &HttpServer{
+		Node:    raftNode,
+		Address: config.HTTPAddress,
+		Logger:  &httpLogger,
 	}
 	//starts the http service
 	service.Start()
