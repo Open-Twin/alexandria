@@ -55,7 +55,7 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 		//return errors
 		return nil, errors
 	}
-	//parse ip address
+	//parse ip Address
 	bindAddr := net.ParseIP(rawConfig.BindAddress)
 	//create new tcpaddr from bindaddr and raftport
 	raftAddr := &net.TCPAddr{
@@ -93,13 +93,13 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 	var bindAddr net.IP
 	bindAddr = net.ParseIP(rawConfig.BindAddress)
 	if bindAddr == nil {
-		log.Fatal("bind-address could not be resolved")
+		log.Fatal("bind-Address could not be resolved")
 	}
 
 	var joinAddr net.IP
 	joinAddr = net.ParseIP(rawConfig.JoinAddress)
 	if joinAddr == nil {
-		log.Fatal("join-address could not be resolved")
+		log.Fatal("join-Address could not be resolved")
 	}
 
 	//Check ports
