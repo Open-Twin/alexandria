@@ -3,6 +3,7 @@ package raft_test
 import (
 "encoding/json"
 	"github.com/Open-Twin/alexandria/raft"
+	"github.com/Open-Twin/alexandria/raft/config"
 	"log"
 	"net"
 	"net/http"
@@ -29,12 +30,12 @@ func TestMain(m *testing.M) {
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 8000,
 	}
-	conf := &raft.Config{
+	conf := &config.Config{
 		RaftAddress: raftaddr,
 		HTTPAddress: httpaddr,
 		JoinAddress: "127.0.0.1:8000",
-		DataDir: "./raft/test",
-		Bootstrap: false,
+		DataDir: "./test",
+		Bootstrap: true,
 	}
 	node, err := raft.NewNode(conf, logger)
 	if err != nil{

@@ -2,6 +2,7 @@ package raft
 
 import (
 	"fmt"
+	"github.com/Open-Twin/alexandria/raft/config"
 	"log"
 	"net/http"
 	"net/url"
@@ -11,28 +12,28 @@ import (
 
 func Main(){
 	//read config
-	rawConfig := ReadRawConfig()
+	rawConfig := config.ReadRawConfig()
 	//validate config
-	config, err := rawConfig.ValidateConfig()
+	conf, err := rawConfig.ValidateConfig()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", err)
 		os.Exit(1)
 	}
 	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
-	raftNode, err2 := NewNode(config, raftLogger)
+	raftNode, err2 := NewNode(conf, raftLogger)
 	if err2 != nil {
 		fmt.Fprintf(os.Stderr, "Error configuring Node: %s", err2)
 		os.Exit(1)
 	}
 
 	//attempts to join a Node if join Address is given
-	if config.JoinAddress != "" {
+	if conf.JoinAddress != "" {
 		go func() {
 			retryJoin := func() error {
 				joinUrl := url.URL{
 					Scheme: "http",
-					Host:   config.JoinAddress,
+					Host:   conf.JoinAddress,
 					Path:   "join",
 				}
 
@@ -40,7 +41,7 @@ func Main(){
 				if err != nil {
 					return err
 				}
-				req.Header.Add("Peer-Address", config.RaftAddress.String())
+				req.Header.Add("Peer-Address", conf.RaftAddress.String())
 
 				resp, err := http.DefaultClient.Do(req)
 				if err != nil {
@@ -69,7 +70,7 @@ func Main(){
 	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
 	service := &HttpServer{
 		Node:    raftNode,
-		Address: config.HTTPAddress,
+		Address: conf.HTTPAddress,
 		Logger:  &httpLogger,
 	}
 	//starts the http service

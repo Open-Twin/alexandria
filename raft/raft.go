@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"github.com/Open-Twin/alexandria/raft/config"
 	"github.com/hashicorp/raft"
 	bolt "github.com/hashicorp/raft-boltdb"
 	"log"
@@ -13,15 +14,15 @@ import (
 
 
 type node struct {
-	config   *Config
+	config   *config.Config
 	raftNode *raft.Raft
 	fsm      *fsm
-	logger      *log.Logger
+	logger   *log.Logger
 }
 /*
 creates and returns a new Node
  */
-func NewNode(config *Config, logger *log.Logger) (*node, error){
+func NewNode(config *config.Config, logger *log.Logger) (*node, error){
 
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
@@ -73,7 +74,7 @@ func NewNode(config *Config, logger *log.Logger) (*node, error){
 /*
 creates a new tcp transport for raft
  */
-func newTransport(config *Config, logger *log.Logger) (*raft.NetworkTransport, error){
+func newTransport(config *config.Config, logger *log.Logger) (*raft.NetworkTransport, error){
 	address, err := net.ResolveTCPAddr("tcp",config.RaftAddress.String())
 	if err != nil {
 		return nil, err
