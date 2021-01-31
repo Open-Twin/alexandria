@@ -18,6 +18,7 @@ const (
 	RAFT_ADDR     = "RAFT_ADDR"
 	HTTP_PORT     = "HTTP_PORT"
 	RAFT_PORT     = "RAFT_PORT"
+	JOIN_PORT     = "JOIN_PORT"
 	RAFT_DATA_DIR = "RAFT_DATA_DIR"
 	BOOTSTRAP     = "BOOTSTRAP"
 
@@ -27,13 +28,14 @@ const (
 // Struct that saves all the configured values
 type Config struct {
 	Hostname    string
-	UdpPort     int64
-	TcpPort     int64
-	LogLevel    int64
+	UdpPort     int
+	TcpPort     int
+	LogLevel    int
 	HttpAddr    string
 	RaftAddr    string
-	HttpPort    int64
-	RaftPort    int64
+	HttpPort    int
+	RaftPort    int
+	JoinPort	int
 	RaftDataDir string
 	Bootstrap   bool
 }
@@ -51,28 +53,28 @@ func ReadConf() Config {
 	}
 	cfg.Hostname = hostname
 
-	udp_port, err := strconv.ParseInt(os.Getenv(UDP_PORT), 10, 64)
+	udp_port, err := strconv.Atoi(os.Getenv(UDP_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
 	cfg.UdpPort = udp_port
 
-	tcp_port, err := strconv.ParseInt(os.Getenv(TCP_PORT), 10, 64)
+	tcp_port, err := strconv.Atoi(os.Getenv(TCP_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
 	cfg.TcpPort = tcp_port
 
-	log_level, err := strconv.ParseInt(os.Getenv(LOG_LEVEL), 10, 64)
+	log_level, err := strconv.Atoi(os.Getenv(LOG_LEVEL))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
 	cfg.LogLevel = log_level
 
 	http_addr := os.Getenv(HTTP_ADDR)
-	if http_addr == "" {
+	/*if http_addr == "" {
 		log.Fatalf(ERROR_MSG, HTTP_ADDR)
-	}
+	}*/
 	cfg.HttpAddr = http_addr
 
 	raft_addr := os.Getenv(RAFT_ADDR)
@@ -81,17 +83,23 @@ func ReadConf() Config {
 	}
 	cfg.RaftAddr = raft_addr
 
-	http_port, err := strconv.ParseInt(os.Getenv(HTTP_PORT), 10, 64)
+	http_port, err := strconv.Atoi(os.Getenv(HTTP_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, HTTP_PORT)
 	}
 	cfg.HttpPort = http_port
 
-	raft_port, err := strconv.ParseInt(os.Getenv(RAFT_PORT), 10, 64)
+	raft_port, err := strconv.Atoi(os.Getenv(RAFT_PORT))
 	if err != nil {
 		log.Fatalf(ERROR_MSG, RAFT_PORT)
 	}
 	cfg.RaftPort = raft_port
+
+	join_port, err := strconv.Atoi(os.Getenv(JOIN_PORT))
+	if err != nil {
+		log.Fatalf(ERROR_MSG, JOIN_PORT)
+	}
+	cfg.JoinPort = join_port
 
 	raft_data_dir := os.Getenv(RAFT_DATA_DIR)
 	if raft_data_dir == "" {
