@@ -1,20 +1,21 @@
-package raft_test
+package config_test
 
 import (
 	"fmt"
-	"github.com/Open-Twin/alexandria/raft"
+	"github.com/Open-Twin/alexandria/raft/config"
 	"testing"
 )
 /*
 Tests config validation for general errors if params are technically correct
  */
 func TestValidateValidConfig(t *testing.T){
-	cfg := &raft.RawConfig{
-		BindAddress: "192.168.0.1",
-		JoinAddress: "192.168.0.1",
+	cfg := &config.RawConfig{
+		BindAddress: "1.2.3.4",
+		JoinAddress: "1.2.3.4",
 		RaftPort:    1000,
 		HTTPPort:    8080,
-		DataDir:     "../raft",
+		JoinPort:    8000,
+		DataDir:     "../config",
 		Bootstrap:   false,
 	}
 	_, err := cfg.ValidateConfig()
@@ -22,16 +23,18 @@ func TestValidateValidConfig(t *testing.T){
 		t.Errorf("cfg.validateConfig failed, expected %v but got %v", nil, err)
 	}
 }
+
 /*
 Tests config validation for errors at 'BindAddress'
  */
 func TestValidateConfigUnvalidBindAddress(t *testing.T){
-	cfg := &raft.RawConfig{
-		BindAddress: "192.168.0.f",
-		JoinAddress: "192.168.0.1",
+	cfg := &config.RawConfig{
+		BindAddress: "1.2.3.f",
+		JoinAddress: "1.2.3.4",
 		RaftPort:    1000,
 		HTTPPort:    8080,
-		DataDir:     "../raft",
+		JoinPort:	 8000,
+		DataDir:     "../config",
 		Bootstrap:   false,
 	}
 	errorFound := false
@@ -53,12 +56,13 @@ func TestValidateConfigUnvalidBindAddress(t *testing.T){
 Tests config for errors at 'JoinAddress'
  */
 func TestValidateConfigUnvalidJoinAddress(t *testing.T){
-	cfg := &raft.RawConfig{
-		BindAddress: "192.168.0.1",
-		JoinAddress: "192.a.0.1",
+	cfg := &config.RawConfig{
+		BindAddress: "1.2.3.4",
+		JoinAddress: "1.a.3.4",
 		RaftPort:    1000,
 		HTTPPort:    8080,
-		DataDir:     "./raft",
+		JoinPort:	 8000,
+		DataDir:     "../config",
 		Bootstrap:   false,
 	}
 	errorFound := false
@@ -80,12 +84,13 @@ func TestValidateConfigUnvalidJoinAddress(t *testing.T){
 Tests config validation for errors at 'RaftPort'
  */
 func TestValidateConfigUnvalidRaftPort(t *testing.T){
-	cfg := &raft.RawConfig{
-		BindAddress: "192.168.0.1",
-		JoinAddress: "192.168.0.1",
+	cfg := &config.RawConfig{
+		BindAddress: "1.2.3.4",
+		JoinAddress: "1.2.3.4",
 		RaftPort:    100000,
 		HTTPPort:    8080,
-		DataDir:     "./raft",
+		JoinPort:	 8000,
+		DataDir:     "../config",
 		Bootstrap:   false,
 	}
 	errorFound := false
@@ -107,12 +112,13 @@ func TestValidateConfigUnvalidRaftPort(t *testing.T){
 Tests config validation for errors at 'HTTPPort'
  */
 func TestValidateConfigUnvalidHTTPPort(t *testing.T){
-	cfg := &raft.RawConfig{
-		BindAddress: "192.168.0.1",
-		JoinAddress: "192.168.0.1",
+	cfg := &config.RawConfig{
+		BindAddress: "1.2.3.4",
+		JoinAddress: "1.2.3.4",
 		RaftPort:    1000,
 		HTTPPort:    -8080,
-		DataDir:     "./raft",
+		JoinPort:	 8000,
+		DataDir:     "../config",
 		Bootstrap:   false,
 	}
 	errorFound := false
@@ -134,12 +140,13 @@ func TestValidateConfigUnvalidHTTPPort(t *testing.T){
 Tests config validation for errors at 'DataDir'
  */
 func TestValidateConfigUnvalidDataDir(t *testing.T){
-	cfg := &raft.RawConfig{
-		BindAddress: "192.168.0.1",
-		JoinAddress: "192.168.0.1",
+	cfg := &config.RawConfig{
+		BindAddress: "1.2.3.4",
+		JoinAddress: "1.2.3.4",
 		RaftPort:    1000,
 		HTTPPort:    -8080,
-		DataDir:     "./raft/",
+		JoinPort:	 8000,
+		DataDir:     "./unvalid",
 		Bootstrap:   false,
 	}
 	errorFound := false

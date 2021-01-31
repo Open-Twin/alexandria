@@ -1,8 +1,8 @@
-package raft
+package config
 
 import (
 	"github.com/Open-Twin/alexandria/cfg"
-	"gopkg.in/go-playground/validator.v9"
+	"github.com/go-playground/validator/v10"
 	"net"
 	"strconv"
 )
@@ -24,7 +24,7 @@ type Config struct {
 	DataDir     string
 	Bootstrap   bool
 }
-func ReadRawConfig() RawConfig{
+func ReadRawConfig() RawConfig {
 	rawConf := cfg.ReadConf()
 
 	return RawConfig{
