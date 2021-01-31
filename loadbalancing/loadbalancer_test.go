@@ -142,3 +142,11 @@ func TestNoServerAdded(t *testing.T) {
 	answer := sendRequest("127.0.0.1:1212", t)
 	fmt.Println(answer)
 }
+
+func TestServerGoesDown(t *testing.T) {
+
+}
+
+func TestServerNoResponse(t *testing.T) {
+
+}
