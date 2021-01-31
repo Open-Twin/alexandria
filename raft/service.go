@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/raft"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -66,33 +66,43 @@ function for handling post requests
  */
 func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) {
 	request := struct {
-		NewValue int `json:"newValue"`
+		Service string
+		Ip string
+		Type string
+		Key string
+		Value string
 	}{}
 
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		server.Logger.Println("Bad request")
+		bodyBytes, _ := ioutil.ReadAll(r.Body)
+		server.Logger.Print(string(bodyBytes))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	event := &event{
-		Type:  "set",
-		Value: request.NewValue,
+		Service: request.Service,
+		Ip: request.Ip,
+		Type:  request.Type,
+		Key: request.Key,
+		Value: request.Value,
 	}
-
+	log.Print("DEJAN2: "+event.Service+" "+event.Ip+" "+event.Type+" "+event.Key+" "+event.Value)
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
 		server.Logger.Println("")
 	}
 	applyFuture := server.Node.raftNode.Apply(eventBytes, 5*time.Second)
 	if err := applyFuture.Error(); err != nil {
+		server.Logger.Println("could not apply to raft cluster: "+err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Got Post: "+strconv.Itoa(request.NewValue)))
+	w.Write([]byte("Got Post"))
 }
 
 /*
@@ -100,11 +110,47 @@ function for handling get requests
  */
 func (server *HttpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+	request := struct {
+		Service string
+		Ip string
+		Type string
+		Key string
+	}{}
 
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		server.Logger.Println("Bad request")
+		bodyBytes, _ := ioutil.ReadAll(r.Body)
+		server.Logger.Print(string(bodyBytes))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	log.Print("DEJAN3: "+request.Service+" "+request.Ip+" "+request.Type+" "+request.Key)
+	respValue, err := server.Node.fsm.Repo.Read(request.Service,request.Ip,request.Key)
+
+	var value map[string]string
+	if err != nil{
+		value= map[string]string{
+			"Type": "error",
+			"Value": err.Error(),
+		}
+	}else {
+		value=map[string]string{
+			"Type": "data",
+			"Value": respValue,
+		}
+	}
 	response := struct {
-		Value int `json:"value"`
+		Service string
+		Type string
+		Key string
+		Value map[string]string
 	}{
-		Value: server.Node.fsm.stateValue,
+		Service: request.Service,
+		Type: "response",
+		Key: request.Key,
+		Value: value,
 	}
 
 	responseBytes, err := json.Marshal(response)

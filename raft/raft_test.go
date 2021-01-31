@@ -1,17 +1,17 @@
 package raft_test
 
 import (
-"encoding/json"
+	"encoding/json"
 	"github.com/Open-Twin/alexandria/raft"
 	"github.com/Open-Twin/alexandria/raft/config"
 	"log"
 	"net"
 	"net/http"
-"net/http/httptest"
+	"net/http/httptest"
 	"os"
-"strings"
+	"strings"
 
-"testing"
+	"testing"
 )
 
 var s raft.HttpServer
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 		DataDir: "./test",
 		Bootstrap: true,
 	}
-	node, err := raft.NewNode(conf, logger)
+	node, err := raft.NewInMemNodeForTesting(conf, logger)
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 		Address: httpaddr,
 		Logger: logger,
 	}
-	s.Start()
+	go s.Start()
 	//checks if table exists. if not, creates it
 	//runs tests
 	code := m.Run()
@@ -84,10 +84,16 @@ func getMessage(j string) string {
 	return message.Message
 }
 
+//NEW TEST WITH POST FOLLOWER SHOULD FAIL
+
 func TestPostNewDataShouldPass(t *testing.T) {
 	//reset()
+	/*values := map[string]string{"newValue": "90"}
+	json_data, _ := json.Marshal(values)
+	*/
+	//req, _ := http.NewRequest("POST", "/key", bytes.NewBuffer(json_data))
+	req, _ := http.NewRequest("POST", "/key", strings.NewReader(`{"newValue":99}`))
 
-	req, _ := http.NewRequest("POST", "/key", strings.NewReader("newValue=99"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
 	response := executeRequest(req)
