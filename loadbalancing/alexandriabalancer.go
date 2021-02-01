@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Open-Twin/alexandria/communication"
 	"net"
+	"strconv"
 )
 
 //TODO: Comments and Multithreading Support
@@ -24,7 +25,7 @@ func StartAlexandriaLoadbalancer(dnsport int) *AlexandriaBalancer {
 
 	go udpServer.StartUDP(func(addr net.Addr, msg []byte) []byte {
 		go lb.forwardMsg(msg)
-		return []byte("dns forwarded")
+		return []byte("request forwarded")
 	})
 
 	return &lb
@@ -64,15 +65,14 @@ func (l *AlexandriaBalancer) nextAddr() string {
 	return address
 }
 
-func (l *AlexandriaBalancer) forwardMsg(msg []byte) {
-	if len(l.dnsservers)==0 {
+func (l *AlexandriaBalancer) forwardMsg(msg []byte) {if len(l.dnsservers)==0 {
 		fmt.Println("No dns nodes to forward to.")
 		return
 	}
 
 	adrentik := l.nextAddr()
 
-	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik + ":" + string(l.dnsport))
+	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik + ":" + strconv.Itoa(l.dnsport))
 	if err != nil {
 		fmt.Printf("Error on resolving client address : %s\n", err)
 	}
