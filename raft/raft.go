@@ -79,9 +79,6 @@ func NewNode(config *config.Config, logger *log.Logger) (*node, error){
 Creates a new node but without persistent storage
 only for tests
  */
-/*
-creates and returns a new Node
-*/
 func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*node, error){
 
 	raftConfig := raft.DefaultConfig()

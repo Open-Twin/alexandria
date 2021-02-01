@@ -1,6 +1,7 @@
 package raft_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/Open-Twin/alexandria/raft"
 	"github.com/Open-Twin/alexandria/raft/config"
@@ -9,9 +10,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
-
 	"testing"
+	"time"
 )
 
 var s raft.HttpServer
@@ -47,6 +47,7 @@ func TestMain(m *testing.M) {
 		Logger: logger,
 	}
 	go s.Start()
+	time.Sleep(5 * time.Second)
 	//checks if table exists. if not, creates it
 	//runs tests
 	code := m.Run()
@@ -69,72 +70,212 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
 	}
 }
-type Message struct {
-	Message string
-	Status  bool
+type response struct {
+	Service string
+	Type string
+	Key string
+	Value map[string]string
 }
-func getMessageStatus(j string) bool {
-	var message Message
-	json.Unmarshal([]byte(j), &message)
-	return message.Status
+
+func getMessageType(j string) string {
+	var resp response
+	json.Unmarshal([]byte(j), &resp)
+	return resp.Value["Type"]
 }
-func getMessage(j string) string {
-	var message Message
-	json.Unmarshal([]byte(j), &message)
-	return message.Message
+func getMessageValue(j string) string {
+	var resp response
+	json.Unmarshal([]byte(j), &resp)
+	return resp.Value["Value"]
 }
 
 //NEW TEST WITH POST FOLLOWER SHOULD FAIL
 
+/*
+POST requests
+ */
 func TestPostNewDataShouldPass(t *testing.T) {
 	//reset()
-	/*values := map[string]string{"newValue": "90"}
-	json_data, _ := json.Marshal(values)
-	*/
-	//req, _ := http.NewRequest("POST", "/key", bytes.NewBuffer(json_data))
-	req, _ := http.NewRequest("POST", "/key", strings.NewReader(`{"newValue":99}`))
+	values := map[string]string{
+		"service": "electricity",
+		"ip": "1.2.3.4",
+		"type": "store",
+		"key": "volt",
+		"value": "50",
+	}
+	jsonData, _ := json.Marshal(values)
 
+	req, _ := http.NewRequest("POST", "/key", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
+	expectedType := "ok"
 
-	if body := response.Body.String(); getMessageStatus(body) != true{
+	if body := response.Body.String(); getMessageType(body) != expectedType{
 		t.Errorf("Expected successful POST. Got %s", body)
 	}
 }
 
-func TestPostMalformedDataShouldFail(t *testing.T){
+func TestPostDeleteDataShouldPass(t *testing.T) {
 	//reset()
+	values := map[string]string{
+		"service": "deleteServiceTest",
+		"ip": "1.2.3.4",
+		"type": "store",
+		"key": "volt",
+		"value": "50",
+	}
+	jsonData, _ := json.Marshal(values)
 
-	req, _ := http.NewRequest("POST", "/key", strings.NewReader("newValue=falscherdatentyp"))
+	req, _ := http.NewRequest("POST", "/key", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
 	response := executeRequest(req)
 
-	checkResponseCode(t, http.StatusOK, response.Code)
+	values = map[string]string{
+		"service": "deleteServiceTest",
+		"ip": "1.2.3.4",
+		"type": "delete",
+		"key": "volt",
+	}
+	jsonData, _ = json.Marshal(values)
 
-	if body := response.Body.String(); getMessageStatus(body) != false{
-		t.Errorf("Expected failed POST due to wrong type. Got %s", body)
+	req, _ = http.NewRequest("POST", "/key", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+	expectedType := "ok"
+
+	if body := response.Body.String(); getMessageType(body) != expectedType{
+		t.Errorf("Expected successful delete. Got %s", body)
 	}
 }
 
-func TestGetDataShouldPass(t *testing.T){
+func TestPostUpdateDataShouldPass(t *testing.T) {
 	//reset()
+	values := map[string]string{
+		"service": "updateServiceTest",
+		"ip": "1.2.3.4",
+		"type": "store",
+		"key": "volt",
+		"value": "20",
+	}
+	jsonData, _ := json.Marshal(values)
 
-	req, _ := http.NewRequest("GET", "/key", nil)
+	req, _ := http.NewRequest("POST", "/key", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
 
 	response := executeRequest(req)
 
+	expectedValue := "500"
+	values = map[string]string{
+		"service": "deleteServiceTest",
+		"ip": "1.2.3.4",
+		"type": "update",
+		"key": "volt",
+		"value": expectedValue,
+	}
+	jsonData, _ = json.Marshal(values)
+
+	req, _ = http.NewRequest("POST", "/key", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	response = executeRequest(req)
+
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	if body := response.Body.String(); getMessageStatus(body) != true{
+
+	values = map[string]string{
+		"service": "deleteServiceTest",
+		"ip": "1.2.3.4",
+		"type": "get",
+		"key": "volt",
+	}
+	jsonData, _ = json.Marshal(values)
+
+	req, _ = http.NewRequest("GET", "/key", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	if body := response.Body.String(); getMessageValue(body) != expectedValue{
+		t.Errorf("Expected successful update. Got %s", body)
+	}
+}
+/*
+GET requests
+ */
+func TestGetDataShouldPass(t *testing.T){
+	//reset()
+	//Post data to get later
+	expectedValue := "100"
+	postValues := map[string]string{
+		"service": "water",
+		"ip": "1.2.3.4",
+		"type": "store",
+		"key": "height",
+		"value": expectedValue,
+	}
+	jsonData, _ := json.Marshal(postValues)
+	req, _ := http.NewRequest("POST", "/key", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	values := map[string]string{
+		"service": "water",
+		"ip": "1.2.3.4",
+		"type": "get",
+		"key": "height",
+	}
+	jsonData, _ = json.Marshal(values)
+
+	req, _ = http.NewRequest("GET", "/key", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+	expectedType := "data"
+
+	if body := response.Body.String(); getMessageType(body) != expectedType && getMessageValue(body) != "100"{
 		t.Errorf("Expected successful GET. Got %s", body)
 	}
 }
 
+func TestGetNonExistingShouldFail(t *testing.T){
+	//reset()
+	//Post data to get later
+
+	values := map[string]string{
+		"service": "nonexisting",
+		"ip": "1.2.3.4",
+		"type": "get",
+		"key": "height",
+	}
+	jsonData, _ := json.Marshal(values)
+
+	req, _ := http.NewRequest("GET", "/key", bytes.NewBuffer(jsonData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+	expectedType := "error"
+
+	if body := response.Body.String(); getMessageType(body) != expectedType{
+		t.Errorf("Expected successful GET. Got %s", body)
+	}
+}
+
+/*
+JOIN requests
+ */
 func TestJoinWithCorrectAddressShouldPass(t *testing.T){
 	//reset()
 
@@ -146,7 +287,4 @@ func TestJoinWithCorrectAddressShouldPass(t *testing.T){
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	if body := response.Body.String(); getMessageStatus(body) != true{
-		t.Errorf("Expected successful JOIN. Got %s", body)
-	}
 }
