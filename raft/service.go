@@ -90,10 +90,12 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 		Value: request.Value,
 	}
 	log.Print("DEJAN2: "+event.Service+" "+event.Ip+" "+event.Type+" "+event.Key+" "+event.Value)
+
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
 		server.Logger.Println("")
 	}
+	//Apply to Raft cluster
 	applyFuture := server.Node.raftNode.Apply(eventBytes, 5*time.Second)
 	if err := applyFuture.Error(); err != nil {
 		server.Logger.Println("could not apply to raft cluster: "+err.Error())
@@ -102,7 +104,12 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Got Post"))
+
+	if err != nil{
+		sendResponse(request.Service,request.Key,"error","something went wrong. please check your input.",w)
+	}else {
+		sendResponse(request.Service,request.Key,"ok","null",w)
+	}
 }
 
 /*
@@ -127,38 +134,15 @@ func (server *HttpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Print("DEJAN3: "+request.Service+" "+request.Ip+" "+request.Type+" "+request.Key)
+
 	respValue, err := server.Node.fsm.Repo.Read(request.Service,request.Ip,request.Key)
 
-	var value map[string]string
 	if err != nil{
-		value= map[string]string{
-			"Type": "error",
-			"Value": err.Error(),
-		}
+		sendResponse(request.Service,request.Key,"error",err.Error(),w)
+
 	}else {
-		value=map[string]string{
-			"Type": "data",
-			"Value": respValue,
-		}
+		sendResponse(request.Service,request.Key,"data",respValue,w)
 	}
-	response := struct {
-		Service string
-		Type string
-		Key string
-		Value map[string]string
-	}{
-		Service: request.Service,
-		Type: "response",
-		Key: request.Key,
-		Value: value,
-	}
-
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		server.Logger.Println("")
-	}
-
-	w.Write(responseBytes)
 }
 
 /*
@@ -181,4 +165,31 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 
 	server.Logger.Printf("Peer joined Raft with Address %v\n",peerAddress)
 	w.WriteHeader(http.StatusOK)
+}
+
+func sendResponse(service, key, etype, value string, w http.ResponseWriter){
+
+	valueMap := map[string]string{
+		"Type": etype,
+		"Value": value,
+	}
+	response := struct {
+		Service string
+		Type string
+		Key string
+		Value map[string]string
+	}{
+		Service: service,
+		Type: "response",
+		Key: key,
+		Value: valueMap,
+	}
+
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		//server.Logger.Println("")
+		log.Print("sendresponse failed")
+	}
+
+	w.Write(responseBytes)
 }
