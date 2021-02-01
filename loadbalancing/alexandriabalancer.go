@@ -74,18 +74,18 @@ func (l *AlexandriaBalancer) forwardMsg(msg []byte) {
 
 	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik + ":" + string(l.dnsport))
 	if err != nil {
-		fmt.Printf("Error on resolving client address : %s", err)
+		fmt.Printf("Error on resolving client address : %s\n", err)
 	}
 
 	target, err := net.DialUDP("udp", nil, receiverAddr)
 	if err != nil {
-		fmt.Printf("Error on establishing client connection: %s", err)
+		fmt.Printf("Error on establishing client connection: %s\n", err)
 	}
 
-	_, err = target.WriteToUDP(msg, receiverAddr)
+	_, err = target.Write(msg)
 	if err != nil {
-		fmt.Printf("Error on sending message to client: %s", err)
+		fmt.Printf("Error on sending message to client: %s\n", err)
 	}
 
-	fmt.Printf("Message forwareded to: %s:%d", adrentik, l.dnsport)
+	fmt.Printf("Message forwareded to: %s:%d\n", adrentik, l.dnsport)
 }
