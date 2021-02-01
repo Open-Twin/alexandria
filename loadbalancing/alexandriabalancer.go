@@ -56,7 +56,7 @@ func (l *AlexandriaBalancer) GetDnsEntries() []string {
 func (l *AlexandriaBalancer) nextAddr() string {
 	// Implementation of the loadbalancing
 	l.pointer++
-	if l.pointer > len(l.dnsservers) {
+	if l.pointer >= len(l.dnsservers) {
 		l.pointer = 0
 	}
 
@@ -65,9 +65,14 @@ func (l *AlexandriaBalancer) nextAddr() string {
 }
 
 func (l *AlexandriaBalancer) forwardMsg(msg []byte) {
+	if len(l.dnsservers)==0 {
+		fmt.Println("No dns nodes to forward to.")
+		return
+	}
+
 	adrentik := l.nextAddr()
 
-	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik)
+	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik + ":" + string(l.dnsport))
 	if err != nil {
 		fmt.Printf("Error on resolving client address : %s", err)
 	}
@@ -82,5 +87,5 @@ func (l *AlexandriaBalancer) forwardMsg(msg []byte) {
 		fmt.Printf("Error on sending message to client: %s", err)
 	}
 
-	fmt.Printf("Message forwareded to: %s", adrentik)
+	fmt.Printf("Message forwareded to: %s:%d", adrentik, l.dnsport)
 }

@@ -9,11 +9,13 @@ import (
 func main() {
 	args := os.Args[1:]
 
-	lb := loadbalancing.StartAlexandriaLoadbalancer(1212)
+	quit := make(chan struct{})
+	lb := loadbalancing.StartAlexandriaLoadbalancer(53)
 
 	for _, ip := range args {
 		lb.AddDns(ip)
 	}
 
 	fmt.Println(lb.GetDnsEntries())
+	<-quit
 }
