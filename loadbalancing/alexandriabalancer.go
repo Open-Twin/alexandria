@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-//TODO: Comments and Multithreading Support
+//TODO: Comments, Multithreading Support, DNS answer
 
 type AlexandriaBalancer struct {
 	dnsservers []string
@@ -24,7 +24,7 @@ func StartAlexandriaLoadbalancer(dnsport int) *AlexandriaBalancer {
 	}
 
 	go udpServer.StartUDP(func(addr net.Addr, msg []byte) []byte {
-		go lb.forwardMsg(msg)
+		go lb.forwardMsg(addr, msg)
 		return []byte("request forwarded")
 	})
 
@@ -65,26 +65,34 @@ func (l *AlexandriaBalancer) nextAddr() string {
 	return address
 }
 
-func (l *AlexandriaBalancer) forwardMsg(msg []byte) {if len(l.dnsservers)==0 {
+func (l *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
+	fmt.Println("Message received: "+string(msg))
+
+	if len(l.dnsservers) == 0 {
 		fmt.Println("No dns nodes to forward to.")
 		return
 	}
 
 	adrentik := l.nextAddr()
 
-	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik + ":" + strconv.Itoa(l.dnsport))
+	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik+":"+strconv.Itoa(l.dnsport))
+	if err != nil {
+		fmt.Printf("Error on resolving dns address : %s\n", err)
+	}
+
+	/*sourceAddr, err := net.ResolveUDPAddr("udp", source.String())
 	if err != nil {
 		fmt.Printf("Error on resolving client address : %s\n", err)
-	}
+	}*/
 
 	target, err := net.DialUDP("udp", nil, receiverAddr)
 	if err != nil {
-		fmt.Printf("Error on establishing client connection: %s\n", err)
+		fmt.Printf("Error on establishing dns connection: %s\n", err)
 	}
 
 	_, err = target.Write(msg)
 	if err != nil {
-		fmt.Printf("Error on sending message to client: %s\n", err)
+		fmt.Printf("Error on sending message to dns: %s\n", err)
 	}
 
 	fmt.Printf("Message forwareded to: %s:%d\n", adrentik, l.dnsport)
