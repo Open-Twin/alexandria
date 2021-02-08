@@ -9,7 +9,9 @@ import (
 
 type RawConfig struct {
 	BindAddress string `validate:"required,ipv4"`
-	JoinAddress string `validate:"omitempty,ipv4"`
+	JoinAddress string `validate:"omitempty,ipv4"`    //ipv4 not working with urls -> TODO
+	HTTPAddress string
+	//JoinAddress string `validate:"omitempty"`
 	RaftPort    int `validate:"required,max=65536,min=1"`
 	HTTPPort    int `validate:"required,max=65536,min=1"`
 	JoinPort	int `validate:"max=65536,min=1"`
@@ -29,7 +31,8 @@ func ReadRawConfig() RawConfig {
 
 	return RawConfig{
 		BindAddress: rawConf.RaftAddr,
-		JoinAddress: rawConf.HttpAddr,
+		HTTPAddress: rawConf.HttpAddr,
+		JoinAddress: rawConf.JoinAddr,
 		RaftPort: rawConf.RaftPort,
 		HTTPPort: rawConf.HttpPort,
 		JoinPort: rawConf.JoinPort,
@@ -63,14 +66,15 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 		Port: rawConfig.RaftPort,
 	}
 	//create new tcpaddr from bindAddr and httpport
+	httpAddress := net.ParseIP(rawConfig.HTTPAddress)
 	httpAddr := &net.TCPAddr{
-		IP: bindAddr,
+		IP: httpAddress,
 		Port: rawConfig.HTTPPort,
 	}
 
 	//create new joinaddr from joinaddr and joinport
 	joinAddr := ""
-	if rawConfig.JoinAddress != "" && rawConfig.JoinPort != 1  {
+	if rawConfig.JoinAddress != "1" && rawConfig.JoinPort != 1  {
 		joinAddr = rawConfig.JoinAddress + ":" + strconv.Itoa(rawConfig.JoinPort)
 	}
 	//create config

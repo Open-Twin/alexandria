@@ -10,12 +10,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
 
 var s raft.HttpServer
-
+const raftaddrip = "127.0.0.1"
+const raftaddrport = 7000
+const httpaddrip = "127.0.0.1"
+const httpaddrport = 8000
 /*
 Entrypoint for the tests
 */
@@ -23,12 +27,12 @@ func TestMain(m *testing.M) {
 	logger := log.New(os.Stdout,"",log.Ltime)
 
 	raftaddr := &net.TCPAddr{
-		IP: net.ParseIP("127.0.0.1"),
-		Port: 7000,
+		IP: net.ParseIP(raftaddrip),
+		Port: raftaddrport,
 	}
 	httpaddr := &net.TCPAddr{
-		IP: net.ParseIP("127.0.0.1"),
-		Port: 8000,
+		IP: net.ParseIP(httpaddrip),
+		Port: httpaddrport,
 	}
 	conf := &config.Config{
 		RaftAddress: raftaddr,
@@ -279,7 +283,7 @@ JOIN requests
 func TestJoinWithCorrectAddressShouldPass(t *testing.T){
 	//reset()
 
-	raftAddress := "localhost:8000"
+	raftAddress := raftaddrip+":"+strconv.Itoa(raftaddrport)
 	req, _ := http.NewRequest("POST","/join", nil)
 	req.Header.Add("Peer-Address", raftAddress)
 

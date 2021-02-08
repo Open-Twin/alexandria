@@ -16,6 +16,7 @@ const (
 	LOG_LEVEL     = "LOG_LEVEL"
 	HTTP_ADDR     = "HTTP_ADDR"
 	RAFT_ADDR     = "RAFT_ADDR"
+	JOIN_ADDR     = "JOIN_ADDR"
 	HTTP_PORT     = "HTTP_PORT"
 	RAFT_PORT     = "RAFT_PORT"
 	JOIN_PORT     = "JOIN_PORT"
@@ -33,6 +34,7 @@ type Config struct {
 	LogLevel    int
 	HttpAddr    string
 	RaftAddr    string
+	JoinAddr	string
 	HttpPort    int
 	RaftPort    int
 	JoinPort	int
@@ -82,6 +84,12 @@ func ReadConf() Config {
 		log.Fatalf(ERROR_MSG, RAFT_ADDR)
 	}
 	cfg.RaftAddr = raft_addr
+
+	join_addr := os.Getenv(JOIN_ADDR)
+	if raft_addr == "" {
+		log.Fatalf(ERROR_MSG, JOIN_ADDR)
+	}
+	cfg.JoinAddr = join_addr
 
 	http_port, err := strconv.Atoi(os.Getenv(HTTP_PORT))
 	if err != nil {

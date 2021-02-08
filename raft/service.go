@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/raft"
@@ -8,6 +9,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -95,10 +98,43 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		server.Logger.Println("")
 	}
+
+	//TODO: forward to leader if not leader
+	log.Print("State: "+server.Node.raftNode.State().String()+ " Leader addr: "+server.Node.config.JoinAddress)
+	if server.Node.raftNode.State() != raft.Leader {
+		leaderUrl := url.URL{
+			Scheme: "http",
+			//TODO: Leader address
+			Host:   server.Node.config.JoinAddress,
+			Path:   "key",
+		}
+
+		req, _ := http.NewRequest("POST", leaderUrl.String(), bytes.NewBuffer(eventBytes))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+		req.Close = true
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			sendResponse(request.Service,request.Key,"error",err.Error(),w)
+			return
+		}else if resp.StatusCode != http.StatusOK {
+			sendResponse(request.Service,request.Key,"error","non 200 status code: "+strconv.Itoa(resp.StatusCode),w)
+			return
+		}
+		log.Print("Request forwarded to leader")
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		w.Write(bodyBytes)
+		//sendResponse(request.Service,request.Key,"ok",,w)
+		return
+	}
+
 	//Apply to Raft cluster
 	applyFuture := server.Node.raftNode.Apply(eventBytes, 5*time.Second)
 	if err := applyFuture.Error(); err != nil {
 		server.Logger.Println("could not apply to raft cluster: "+err.Error())
+		sendResponse(request.Service,request.Key,"error","could not apply to raft cluster: "+err.Error(),w)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

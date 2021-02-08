@@ -26,7 +26,6 @@ func Main(){
 		fmt.Fprintf(os.Stderr, "Error configuring Node: %s", err2)
 		os.Exit(1)
 	}
-
 	//attempts to join a Node if join Address is given
 	if conf.JoinAddress != "" {
 		go func() {
@@ -36,8 +35,8 @@ func Main(){
 					Host:   conf.JoinAddress,
 					Path:   "join",
 				}
-
 				req, err := http.NewRequest(http.MethodPost, joinUrl.String(), nil)
+				req.Close = true
 				if err != nil {
 					return err
 				}

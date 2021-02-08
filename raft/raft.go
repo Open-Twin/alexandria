@@ -128,8 +128,8 @@ func newTransport(config *config.Config, logger *log.Logger) (*raft.NetworkTrans
 	if err != nil {
 		return nil, err
 	}
-	//Logger statt stdout
-	transport, err := raft.NewTCPTransport(address.String(), config.HTTPAddress, 3, 10*time.Second, os.Stdout)
+	//TODO Logger statt stdout
+	transport, err := raft.NewTCPTransport(address.String(), nil, 3, 10*time.Second, os.Stdout)
 	if err != nil {
 		return nil, err
 	}
