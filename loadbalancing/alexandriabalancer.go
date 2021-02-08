@@ -80,17 +80,17 @@ func (l *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
 		fmt.Printf("Error on resolving dns address : %s\n", err)
 	}
 
-	/*sourceAddr, err := net.ResolveUDPAddr("udp", source.String())
+	sourceAddr, err := net.ResolveUDPAddr("udp", source.String())
 	if err != nil {
 		fmt.Printf("Error on resolving client address : %s\n", err)
-	}*/
+	}
 
-	target, err := net.DialUDP("udp", nil, receiverAddr)
+	target, err := net.DialUDP("udp", sourceAddr, receiverAddr)
 	if err != nil {
 		fmt.Printf("Error on establishing dns connection: %s\n", err)
 	}
 
-	_, err = target.Write(msg)
+	_, err = target.WriteToUDP(msg, receiverAddr)
 	if err != nil {
 		fmt.Printf("Error on sending message to dns: %s\n", err)
 	}

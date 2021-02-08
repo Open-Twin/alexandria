@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -116,13 +117,13 @@ func sendRequest(ip string, t *testing.T) string {
 	receiverAddr, _ := net.ResolveUDPAddr("udp", ip)
 	target, _ := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
 	a, err := target.WriteToUDP([]byte("dejan.com"), receiverAddr)
-	fmt.Printf("Holandese: %s", string(a))
+	fmt.Printf("Holandese: %s", strconv.Itoa(a))
 
 	if err != nil {
 		t.Errorf("Bla: %s", err)
 	}
 
-	return string(a)
+	return strconv.Itoa(a)
 	//return answer[0]
 }
 
