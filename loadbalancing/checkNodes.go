@@ -16,7 +16,7 @@ type Node struct {
 	healthy bool
 }
 
-func (hc *HealthCheck) ScheduleHealthChecks(interval int64) {
+func (hc *HealthCheck) ScheduleHealthChecks(interval int) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	go func() {
 		for range ticker.C {
@@ -33,15 +33,20 @@ func (hc *HealthCheck) loopNodes() {
 }
 
 func (node *Node) sendCheck() {
-	resp, err := http.Get("http://" + node.ip + ":8080/load")
+	resp, err := http.Get("http://" + node.ip + ":8080/health")
 	if err != nil {
 		node.healthy = false
 		fmt.Printf("Node %s could not be reached: %s\n", node.ip, err)
 		return
 	}
 	respBody, _ := ioutil.ReadAll(resp.Body)
-	node.healthy = true
-	fmt.Printf("Load received %v %%\n", respBody)
+	if resp.StatusCode == 200 {
+		fmt.Printf("Node %s healthy. Response: %v\n", node.ip, string(respBody))
+		node.healthy = true
+	} else {
+		fmt.Printf("Node %s responded with bad status code %v: %s\n", node.ip, resp.StatusCode, resp.Status)
+		node.healthy = false
+	}
 }
 
 func (hc *HealthCheck) AddNode(node string) {

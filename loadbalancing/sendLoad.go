@@ -2,23 +2,24 @@ package loadbalancing
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
+	"time"
 )
 
 func StartLoadReporting() {
-	http.HandleFunc("/load", sendLoad)
+	http.HandleFunc("/health", sendLoad)
 	go http.ListenAndServe(":8080", nil)
 	fmt.Println("Started reporting current server load")
 }
 
 func sendLoad(w http.ResponseWriter, r *http.Request) {
-	load := collectData()
-	fmt.Printf("Sending current load to dns: %s\n", string(load))
-	w.Write(load)
+	data := collectData()
+	fmt.Printf("Sending status as requested: %s\n", string(data))
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 func collectData() []byte {
-	randLoad := fmt.Sprint(rand.Intn(99))
-	return []byte(randLoad)
+	timestamp := time.Now()
+	return []byte(timestamp.String())
 }
