@@ -100,12 +100,13 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	//TODO: forward to leader if not leader
-	log.Print("State: "+server.Node.raftNode.State().String()+ " Leader addr: "+server.Node.config.JoinAddress)
+	leaderAddr := server.Node.config.JoinAddress
+	log.Print("State: "+server.Node.raftNode.State().String()+ " Leader addr: "+leaderAddr)
 	if server.Node.raftNode.State() != raft.Leader {
 		leaderUrl := url.URL{
 			Scheme: "http",
 			//TODO: Leader address
-			Host:   server.Node.config.JoinAddress,
+			Host:   leaderAddr,
 			Path:   "key",
 		}
 
@@ -120,7 +121,7 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 			sendResponse(request.Service,request.Key,"error","non 200 status code: "+strconv.Itoa(resp.StatusCode),w)
 			return
 		}
-		log.Print("Request forwarded to leader")
+		log.Print("Request forwarded to leader "+leaderAddr)
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Fatal(err)

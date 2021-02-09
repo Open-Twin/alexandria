@@ -3,15 +3,16 @@ package config
 import (
 	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/go-playground/validator/v10"
+	"log"
 	"net"
+	"os"
 	"strconv"
 )
 
 type RawConfig struct {
 	BindAddress string `validate:"required,ipv4"`
-	JoinAddress string `validate:"omitempty,ipv4"`    //ipv4 not working with urls -> TODO
+	JoinAddress string `validate:"omitempty"`    //ipv4 not working with urls -> TODO
 	HTTPAddress string
-	//JoinAddress string `validate:"omitempty"`
 	RaftPort    int `validate:"required,max=65536,min=1"`
 	HTTPPort    int `validate:"required,max=65536,min=1"`
 	JoinPort	int `validate:"max=65536,min=1"`
@@ -53,10 +54,19 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 	if err != nil {
 		//loop through errors
 		for _, fieldErr := range err.(validator.ValidationErrors) {
+			log.Print("COCK: "+fieldErr.Field()+" "+fieldErr.Tag())
+			if fieldErr.Tag() == "dir"{
+				direrr := createDirectory(rawConfig.DataDir)
+				if direrr == nil{
+					continue
+				}
+			}
 			errors = append(errors, fieldErr)
 		}
 		//return errors
-		return nil, errors
+		if errors != nil {
+			return nil, errors
+		}
 	}
 	//parse ip Address
 	bindAddr := net.ParseIP(rawConfig.BindAddress)
@@ -87,6 +97,15 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 	}
 	//return config
 	return config, nil
+}
+
+func createDirectory(dir string) error{
+	log.Print("creating directory "+dir)
+	err := os.Mkdir(dir,0755)
+	if err != nil{
+		return err
+	}
+	return nil
 }
 
 /**

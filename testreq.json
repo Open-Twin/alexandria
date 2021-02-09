@@ -1,7 +1,7 @@
 {
-  "service": "electricity",
+  "service": "temperature",
   "ip": "1.2.3.4",
   "type": "store",
-  "key": "volt",
-  "value": "150"
+  "key": "toilet",
+  "value": "100C"
 }
