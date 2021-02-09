@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -16,23 +18,34 @@ type Node struct {
 	healthy bool
 }
 
-func (hc *HealthCheck) ScheduleHealthChecks(interval int) {
+type CheckType int
+
+const (
+	HttpCheck CheckType = 0
+	PingCheck CheckType = 1
+)
+
+func (hc *HealthCheck) ScheduleHealthChecks(interval int, checkType CheckType) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	go func() {
 		for range ticker.C {
-			hc.loopNodes()
+			hc.loopNodes(checkType)
 		}
 	}()
 }
 
-func (hc *HealthCheck) loopNodes() {
+func (hc *HealthCheck) loopNodes(checkType CheckType) {
 	for i := range hc.nodes {
 		n := &hc.nodes[i]
-		n.sendCheck()
+		if checkType == HttpCheck {
+			n.sendHttpCheck()
+		} else if checkType == PingCheck {
+			n.sendPingCheck()
+		}
 	}
 }
 
-func (node *Node) sendCheck() {
+func (node *Node) sendHttpCheck() {
 	resp, err := http.Get("http://" + node.ip + ":8080/health")
 	if err != nil {
 		node.healthy = false
@@ -45,6 +58,17 @@ func (node *Node) sendCheck() {
 		node.healthy = true
 	} else {
 		fmt.Printf("Node %s responded with bad status code %v: %s\n", node.ip, resp.StatusCode, resp.Status)
+		node.healthy = false
+	}
+}
+
+func (node *Node) sendPingCheck() {
+	out, _ := exec.Command("ping", node.ip, "-c 5", "-i 3", "-w 10").Output()
+	if strings.Contains(string(out), "ping successful") {
+		fmt.Printf("Node %s healthy. Response: %v\n", node.ip, string(out))
+		node.healthy = true
+	} else {
+		fmt.Printf("Node %s could not be reached. Response: %v\n", node.ip, out)
 		node.healthy = false
 	}
 }

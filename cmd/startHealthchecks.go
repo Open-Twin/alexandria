@@ -16,6 +16,6 @@ func main() {
 	}
 
 	quit := make(chan struct{})
-	hc.ScheduleHealthChecks(interval)
-	<- quit
+	hc.ScheduleHealthChecks(interval, loadbalancing.PingCheck)
+	<-quit
 }
