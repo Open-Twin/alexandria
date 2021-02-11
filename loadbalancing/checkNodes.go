@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -63,12 +64,18 @@ func (node *Node) sendHttpCheck() {
 }
 
 func (node *Node) sendPingCheck() {
-	out, _ := exec.Command("ping", node.ip, "-c 5", "-i 3", "-w 10").Output()
-	if strings.Contains(string(out), "ping successful") {
+	os := runtime.GOOS
+	var out []byte
+	if os == "windows" {
+		out, _ = exec.Command("ping", "-n", "2", "-i", "10", "-w", "10", node.ip).Output()
+	} else {
+		out, _ = exec.Command("ping", "-c", "5", "-i", "3", "-w", "10", node.ip).Output()
+	}
+	if strings.Contains(string(out), "2 received") {
 		fmt.Printf("Node %s healthy. Response: %v\n", node.ip, string(out))
 		node.healthy = true
 	} else {
-		fmt.Printf("Node %s could not be reached. Response: %v\n", node.ip, out)
+		fmt.Printf("Node %s could not be reached. Response: %v\n", node.ip, string(out))
 		node.healthy = false
 	}
 }
