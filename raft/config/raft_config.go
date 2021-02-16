@@ -54,7 +54,6 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 	if err != nil {
 		//loop through errors
 		for _, fieldErr := range err.(validator.ValidationErrors) {
-			log.Print("COCK: "+fieldErr.Field()+" "+fieldErr.Tag())
 			if fieldErr.Tag() == "dir"{
 				direrr := createDirectory(rawConfig.DataDir)
 				if direrr == nil{
