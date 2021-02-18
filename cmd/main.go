@@ -1,10 +1,10 @@
 package main
 
-import "github.com/Open-Twin/alexandria/raft"
+import "github.com/Open-Twin/alexandria/dns"
 
 func main(){
 
 	//entrypoint for the project
-	raft.Main()
-
+	//raft.Main()
+	dns.StartDNS()
 }
