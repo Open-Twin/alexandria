@@ -18,6 +18,7 @@ type RawConfig struct {
 	JoinPort	int `validate:"max=65536,min=1"`
 	DataDir     string `validate:"required,dir"`
 	Bootstrap   bool
+	AutoJoin	bool
 }
 //required_with=JoinAddress,
 type Config struct {
@@ -26,6 +27,8 @@ type Config struct {
 	JoinAddress string
 	DataDir     string
 	Bootstrap   bool
+	AutoJoin	bool
+	HTTPPort	int
 }
 func ReadRawConfig() RawConfig {
 	rawConf := cfg.ReadConf()
@@ -39,6 +42,7 @@ func ReadRawConfig() RawConfig {
 		JoinPort: rawConf.JoinPort,
 		DataDir: rawConf.RaftDataDir,
 		Bootstrap: rawConf.Bootstrap,
+		AutoJoin: rawConf.AutoJoin,
 	}
 }
 /**
@@ -93,6 +97,8 @@ func (rawConfig *RawConfig) ValidateConfig() (*Config, []validator.FieldError) {
 		JoinAddress: joinAddr,
 		DataDir:     rawConfig.DataDir,
 		Bootstrap:   rawConfig.Bootstrap,
+		AutoJoin: rawConfig.AutoJoin,
+		HTTPPort: rawConfig.HTTPPort,
 	}
 	//return config
 	return config, nil

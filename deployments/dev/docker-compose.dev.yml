@@ -25,7 +25,8 @@ services:
     depends_on: 
     - leader
     ports:
-    - "8001:8001"
+    - "8001:8000"
+    - "9000:9000"
     networks:
       front:
         ipv4_address: 10.5.0.3
@@ -39,7 +40,7 @@ services:
     depends_on: 
     - leader
     ports:
-    - "8002:8002"
+    - "8002:8000"
     networks:
       front:
         ipv4_address: 10.5.0.4
