@@ -23,6 +23,7 @@ const (
 	RAFT_DATA_DIR = "RAFT_DATA_DIR"
 	BOOTSTRAP     = "BOOTSTRAP"
 	AUTOJOIN	  = "AUTOJOIN"
+	AUTOJOIN_PORT = "AUTOJOIN_PORT"
 	ERROR_MSG = "The variable %s is not set."
 )
 
@@ -41,6 +42,7 @@ type Config struct {
 	RaftDataDir string
 	Bootstrap   bool
 	AutoJoin	bool
+	AutojoinPort int
 }
 
 // Reads the configuration from the environment variables.
@@ -109,6 +111,12 @@ func ReadConf() Config {
 		log.Fatalf(ERROR_MSG, JOIN_PORT)
 	}
 	cfg.JoinPort = join_port
+
+	autojoin_port, err := strconv.Atoi(os.Getenv(AUTOJOIN_PORT))
+	if err != nil {
+		log.Fatalf(ERROR_MSG, AUTOJOIN_PORT)
+	}
+	cfg.AutojoinPort = autojoin_port
 
 	raft_data_dir := os.Getenv(RAFT_DATA_DIR)
 	if raft_data_dir == "" {
