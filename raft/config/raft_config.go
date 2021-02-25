@@ -11,7 +11,7 @@ import (
 
 type RawConfig struct {
 	BindAddress string `validate:"required,ipv4"`
-	JoinAddress string `validate:"omitempty"`    //ipv4 not working with urls -> TODO
+	JoinAddress string `validate:"omitempty,ipv4"`    //ipv4 not working with urls -> TODO
 	HTTPAddress string
 	RaftPort    int `validate:"required,max=65536,min=1"`
 	HTTPPort    int `validate:"required,max=65536,min=1"`
