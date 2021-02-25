@@ -69,7 +69,7 @@ func (node *Node) sendPingCheck() {
 	if os == "windows" {
 		out, _ = exec.Command("ping", "-n", "2", "-i", "10", "-w", "10", node.ip).Output()
 	} else {
-		out, _ = exec.Command("ping", "-c", "5", "-i", "3", "-w", "10", node.ip).Output()
+		out, _ = exec.Command("ping", "-c", "2", "-i", "3", "-w", "10", node.ip).Output()
 	}
 	if strings.Contains(string(out), "2 received") {
 		fmt.Printf("Node %s healthy. Response: %v\n", node.ip, string(out))
