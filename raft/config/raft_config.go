@@ -19,7 +19,7 @@ type RawConfig struct {
 	DataDir     string `validate:"required,dir"`
 	Bootstrap   bool
 	AutoJoin	bool
-	AutojoinPort int `validate:"required,max=65536,min=1"`
+	AutojoinPort int `validate:"max=65536,min=1"`
 }
 //required_with=JoinAddress,
 type Config struct {
@@ -45,6 +45,7 @@ func ReadRawConfig() RawConfig {
 		DataDir: rawConf.RaftDataDir,
 		Bootstrap: rawConf.Bootstrap,
 		AutoJoin: rawConf.AutoJoin,
+		AutojoinPort: rawConf.AutojoinPort,
 	}
 }
 /**
