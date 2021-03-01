@@ -23,11 +23,11 @@ func Main(){
 	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
 	raftNode, err2 := NewNode(conf, raftLogger)
 	if err2 != nil {
-		fmt.Fprintf(os.Stderr, "Error configuring Node: %s", err2)
+		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err2)
 		os.Exit(1)
 	}
 
-	//attempts to join a Node if join Address is given
+	//attempts to join a node if join Address is given
 	if conf.JoinAddress != "" {
 		go func() {
 			retryJoin := func() error {
@@ -74,6 +74,34 @@ func Main(){
 		Logger:  &httpLogger,
 	}
 	//starts the http service
-	service.Start()
+	go service.Start()
+
+	//metadata api start
+	/*metadataApi := &metadataApi{
+		node: raftNode,
+		Address: conf.HTTPAddress,
+		Logger: &metadataLogger,
+	}*/
+	//dns start
+	//TODO: race conditions locks???
+	//dns api
+	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
+	dnsApi := &DnsApi{
+		Node: raftNode,
+		//TODO: address and type from config
+		Address: conf.HTTPAddress,
+		NetworkType: "udp",
+		Logger: &dnsApiLogger,
+	}
+	go dnsApi.StartDnsApi()
+
+	//dns entrypoint
+	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
+	dnsEntrypoint := &DnsEntrypoint{
+		Node: raftNode,
+		Address: conf.HTTPAddress,
+		Logger: &dnsEntrypointLogger,
+	}
+	dnsEntrypoint.StartDnsEntrypoint()
 }
 

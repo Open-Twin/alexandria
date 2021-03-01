@@ -3,52 +3,79 @@ package raft
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Open-Twin/alexandria/dns/metadata"
+	"github.com/Open-Twin/alexandria/dns"
+	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	"io"
 	"log"
 )
 
-/*type fsm struct {
-	mutex sync.Mutex
-	stateValue int
-}*/
-type fsm struct{
-	Repo *metadata.InMemoryStorageRepository
+
+type Fsm struct{
+	MetadataRepo *storage.InMemoryStorageRepository
+	DnsRepo *storage.StorageRepository
 }
-//var repo metadata.InMemoryStorageRepository
-type event struct {
+type metadata struct {
+	dnsormetadata bool
 	Service string
 	Ip      string
 	Type    string
 	Key     string
 	Value   string
 }
+type dnsresource struct {
+	dnsormetadata bool
+	record dns.DNSResourceRecord
+}
+
 // Apply log is invoked once a log entry is committed.
 // It returns a value which will be made available in the
 // ApplyFuture returned by Raft.Apply method if that
-// method was called on the same Raft Node as the FSM.
-func (fsm *fsm) Apply(logEntry *raft.Log) interface{} {
-	var e event
-	if err := json.Unmarshal(logEntry.Data, &e); err != nil {
+// method was called on the same Raft node as the FSM.
+func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
+	var m metadata
+	var d dnsresource
+	var dnsOrMetadata bool
+	if err := json.Unmarshal(logEntry.Data, &dnsOrMetadata); err != nil {
 		panic("Failed unmarshaling Raft log entry. This is a bug.")
 	}
+	if dnsOrMetadata {
+		if err := json.Unmarshal(logEntry.Data, &d.record); err != nil {
+			panic("Failed unmarshaling Raft log entry. This is a bug.")
+		}
+		err := applyToDnsStore(fsm, d)
+		if err != nil{
+			return err
+		}
+	}else{
+		if err := json.Unmarshal(logEntry.Data, &m); err != nil {
+			panic("Failed unmarshaling Raft log entry. This is a bug.")
+		}
+		err := applyToMetadataStore(fsm, m)
+		if err != nil{
+			return err
+		}
+	}
 
+	return nil
+}
+
+func applyToMetadataStore(fsm *Fsm, e metadata) error{
 	switch e.Type {
 	case "store":
-		err := fsm.Repo.Create(e.Service,e.Ip,e.Key,e.Value)
+		err := fsm.MetadataRepo.Create(e.Service,e.Ip,e.Key,e.Value)
 		if err != nil{
 			log.Print("store error: "+err.Error())
 		}
 		return nil
 	case "update":
-		err := fsm.Repo.Update(e.Service,e.Ip,e.Key,e.Value)
+		err := fsm.MetadataRepo.Update(e.Service,e.Ip,e.Key,e.Value)
 		if err != nil{
 			log.Print("update error: "+err.Error())
 		}
 		return nil
 	case "delete":
-		err := fsm.Repo.Delete(e.Service,e.Ip,e.Key)
+		err := fsm.MetadataRepo.Delete(e.Service,e.Ip,e.Key)
 		if err != nil{
 			log.Print("delete error: "+err.Error())
 		}
@@ -57,13 +84,40 @@ func (fsm *fsm) Apply(logEntry *raft.Log) interface{} {
 		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s. This is a bug.", e.Type))
 	}
 }
+
+func applyToDnsStore(fsm *Fsm, e dnsresource) error {
+	/*switch e.Type {
+	case "store":
+		err := fsm.DnsRepo.Create(,e.Value)
+		if err != nil{
+			log.Print("store error: "+err.Error())
+		}
+		return nil
+	case "update":
+		err := fsm.DnsRepo.Update(e.Service,e.Ip,e.Key,e.Value)
+		if err != nil{
+			log.Print("update error: "+err.Error())
+		}
+		return nil
+	case "delete":
+		err := fsm.DnsRepo.Delete(e.Service,e.Ip,e.Key)
+		if err != nil{
+			log.Print("delete error: "+err.Error())
+		}
+		return nil
+	default:
+		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s. This is a bug.", e.Type))
+	}*/
+	return nil
+}
+
 // Snapshot is used to support log compaction. This call should
 // return an FSMSnapshot which can be used to save a point-in-time
 // snapshot of the FSM. Apply and Snapshot are not called in multiple
 // threads, but Apply will be called concurrently with Persist. This means
 // the FSM should be implemented in a fashion that allows for concurrent
 // updates while a snapshot is happening.
-func (fsm *fsm) Snapshot() (raft.FSMSnapshot, error) {
+func (fsm *Fsm) Snapshot() (raft.FSMSnapshot, error) {
 	/*fsm.mutex.Lock()
 	defer fsm.mutex.Unlock()
 
@@ -74,7 +128,7 @@ func (fsm *fsm) Snapshot() (raft.FSMSnapshot, error) {
 // Restore is used to restore an FSM from a snapshot. It is not called
 // concurrently with any other command. The FSM must discard all previous
 // state.
-func (fsm *fsm) Restore(serialized io.ReadCloser) error {
+func (fsm *Fsm) Restore(serialized io.ReadCloser) error {
 	/*var snapshot fsmSnapshot
 	if err := json.NewDecoder(serialized).Decode(&snapshot); err != nil {
 		return err

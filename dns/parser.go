@@ -10,7 +10,7 @@ import (
 
 var request []byte
 
-func handleRequest(addr net.Addr, requestData []byte) []byte {
+func HandleRequest(addr net.Addr, requestData []byte) DNSPDU {
 	request = requestData
 
 	// Create buffer from request array
@@ -34,12 +34,15 @@ func handleRequest(addr net.Addr, requestData []byte) []byte {
 		log.Print(err.Error())
 	}
 
+	body.Flags = flags
+
 	log.Printf("------Header------\n %+v \n", header)
 	log.Printf("------Flags-------\n %+v \n", flags)
 	log.Printf("------Body--------\n %+v \n", body)
 
+
 	// Send stupid answer
-	return []byte("nix")
+	return body
 }
 
 /*
@@ -62,7 +65,6 @@ Reads the dns flags out of the 2 byte long flag section in the header.
  */
 func parseFlags(header uint16) (DNSFlags, error) {
 	var flags DNSFlags
-
 	// 1 bit long query response flag (1st bit)
 	// The value is shifted 15 bits to the right to remove all other bits
 	if header >> 15 == 1 {
@@ -92,6 +94,21 @@ func parseFlags(header uint16) (DNSFlags, error) {
 	// 1 bit long recursion available  (9th bit)
 	if header << 8 >> 15 == 1 {
 		flags.RecursionAvailable = true
+	}
+
+	//z
+	if header << 9 >> 15 == 1 {
+		flags.Z = true
+	}
+
+	//ad
+	if header << 10 >> 15 == 1 {
+		flags.AuthenticData = true
+	}
+
+	//cd
+	if header << 11 >> 15 == 1 {
+		flags.CheckingDisabled = true
 	}
 
 	// 4 bit long response code

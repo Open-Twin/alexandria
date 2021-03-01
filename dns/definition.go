@@ -32,6 +32,12 @@ type DNSFlags struct {
 	RecursionDesired    bool	`json:"recursion_desired"`
 	// Specifies if recursive support is available on the server
 	RecursionAvailable  bool	`json:"recursion_available"`
+	//Z
+	Z					bool	`json:"z"`
+	//Authentic Data
+	AuthenticData		bool	`json:"authentic_data"`
+	//Checking disabled
+	CheckingDisabled	bool	`json:"checking_disabled"`
 	// Response code
 	ResponseCode        uint8	`json:"response_code"`
 }

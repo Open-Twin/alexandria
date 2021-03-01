@@ -1,14 +1,15 @@
-package dns
-
-import (
-	"errors"
-	"sync"
-)
+package storage
 
 /*
 	This class is also seen as the "Repository" it contains the basic CRUD (= Create, Read, Update, Delete) functionalities
 	for the Metadata storage, which is nearly linked to the API.
 */
+
+// Some necessary imports, that are needed for the storage backend
+import (
+	"errors"
+	"sync"
+)
 
 // Creating the MetadataRepository interface which predefines the needed methods for the storage
 type MetadataRepository interface {
@@ -20,27 +21,28 @@ type MetadataRepository interface {
 }
 
 // Predefined variables for the usage in this class
-type hostname = string
-type rdata = string
-type zone = string
-type record = string
+type service = string
+type ip = string
+type key = string
+type value = string
 
 // Creating a structure for the Metadata containing the necessary variables
-type StorageRepository struct {
+type InMemoryStorageRepository struct {
 	// Global Metadata variable for this class
-	Entries map[hostname]map[record]map[zone]rdata
+	Metadata map[service]map[ip]map[key]value
 	// Creating a mutex onto the Metadata variable in order to handle threads
-	mutex sync.RWMutex
+	metadataMu sync.RWMutex
+
 }
-func NewInMemoryStorageRepository() *StorageRepository{
-	entries := make(map[hostname]map[record]map[zone]rdata)
-	return &StorageRepository{
-		Entries: entries,
-	}
+func NewInMemoryStorageRepository() *InMemoryStorageRepository {
+	 metadata := make(map[service]map[ip]map[key]value)
+	 return &InMemoryStorageRepository{
+	 	Metadata: metadata,
+	 }
 }
 // Adding the exists function, which basically just checks if an entry for this specific service exists
-func (imsp *StorageRepository) Exists(service, ip, key string) bool {
-	if imsp.Entries[service][ip][key] != "" {
+func (imsp *InMemoryStorageRepository) Exists(service, ip, key string) bool {
+	if imsp.Metadata[service][ip][key] != "" {
 		return true
 	}
 
@@ -48,18 +50,18 @@ func (imsp *StorageRepository) Exists(service, ip, key string) bool {
 }
 
 // Adding the create function, which basically just adds a new entry to the map
-func (imsp *StorageRepository) Create(service, ip, key, value string) error {
-	imsp.mutex.Lock()
-	defer imsp.mutex.Unlock()
+func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) error {
+	imsp.metadataMu.Lock()
+	defer imsp.metadataMu.Unlock()
 
 
 
 	if imsp.Exists(service, ip, key) {
-		imsp.Entries[service][ip][key] = value
+		imsp.Metadata[service][ip][key] = value
 	} else {
-		imsp.Entries[service]=make(map[string]map[string]string)
-		imsp.Entries[service][ip] = make(map[string]string)
-		imsp.Entries[service][ip][key] = value
+		imsp.Metadata[service]=make(map[string]map[string]string)
+		imsp.Metadata[service][ip] = make(map[string]string)
+		imsp.Metadata[service][ip][key] = value
 		if !imsp.Exists(service, ip, key) {
 			return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 		}
@@ -69,23 +71,23 @@ func (imsp *StorageRepository) Create(service, ip, key, value string) error {
 
 
 // Adding the read function, which basically just returns the specific value of the given service as a string
-func (imsp *StorageRepository) Read(service, ip, key string) (string, error) {
-	imsp.mutex.RLock()
-	defer imsp.mutex.RUnlock()
+func (imsp *InMemoryStorageRepository) Read(service, ip, key string) (string, error) {
+	imsp.metadataMu.RLock()
+	defer imsp.metadataMu.RUnlock()
 	if !imsp.Exists(service, ip, key) {
-		return imsp.Entries[service][ip][key], errors.New("no entry: as it looks like for this specific service no entry was made")
+		return imsp.Metadata[service][ip][key], errors.New("no entry: as it looks like for this specific service no entry was made")
 	}
-	return imsp.Entries[service][ip][key], nil
+	return imsp.Metadata[service][ip][key], nil
 }
 
 // Adding the update function, which basically just replaces a specific value of the given service with the new given value
-func (imsp *StorageRepository) Update(service, ip, key, value string) error {
-	imsp.mutex.Lock()
-	defer imsp.mutex.Unlock()
+func (imsp *InMemoryStorageRepository) Update(service, ip, key, value string) error {
+	imsp.metadataMu.Lock()
+	defer imsp.metadataMu.Unlock()
 	if imsp.Exists(service, ip, key) {
-		imsp.Entries[service][ip][key] = value
+		imsp.Metadata[service][ip][key] = value
 	}else {
-		imsp.Entries[service][ip][key] = value
+		imsp.Metadata[service][ip][key] = value
 		if !imsp.Exists(service, ip, key) {
 			return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 		}
@@ -94,13 +96,13 @@ func (imsp *StorageRepository) Update(service, ip, key, value string) error {
 }
 
 // Adding the delete function, which basically just removes an specific entry (= the given service)
-func (imsp *StorageRepository) Delete(service, ip, key string) error {
-	imsp.mutex.Lock()
-	defer imsp.mutex.Unlock()
+func (imsp *InMemoryStorageRepository) Delete(service, ip, key string) error {
+	imsp.metadataMu.Lock()
+	defer imsp.metadataMu.Unlock()
 	if imsp.Exists(service, ip, key) {
-		delete(imsp.Entries[service][ip], key)
+		delete(imsp.Metadata[service][ip], key)
 	}else {
-		delete(imsp.Entries[service][ip], key)
+		delete(imsp.Metadata[service][ip], key)
 		//! hinzugefügt
 		if !imsp.Exists(service, ip, key) {
 			return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")

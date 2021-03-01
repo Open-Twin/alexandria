@@ -1,8 +1,8 @@
 package raft
 
 import (
-	"github.com/Open-Twin/alexandria/dns/metadata"
 	"github.com/Open-Twin/alexandria/raft/config"
+	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	bolt "github.com/hashicorp/raft-boltdb"
 	"log"
@@ -17,21 +17,23 @@ import (
 type node struct {
 	config   *config.Config
 	raftNode *raft.Raft
-	fsm      *fsm
+	fsm      *Fsm
 	logger   *log.Logger
 }
-/*
-creates and returns a new Node
- */
-func NewNode(config *config.Config, logger *log.Logger) (*node, error){
 
+/*
+creates and returns a new node
+*/
+func NewNode(config *config.Config, logger *log.Logger) (*node, error){
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
 	//raftConfig.Logger = log.New(Logger, "", 0)
 
-	repo := metadata.NewInMemoryStorageRepository()
-	fsm := &fsm{
-		repo,
+	metarepo := storage.NewInMemoryStorageRepository()
+	dnsrepo := storage.NewInMemoryDNSStorageRepository()
+	fsm := &Fsm{
+		MetadataRepo: metarepo,
+		DnsRepo: dnsrepo,
 	}
 
 	logStore, err := bolt.NewBoltStore(filepath.Join(config.DataDir,"logStore"))
@@ -84,9 +86,9 @@ func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*node, e
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
 	//raftConfig.Logger = log.New(Logger, "", 0)
-	repo := metadata.NewInMemoryStorageRepository()
-	fsm := &fsm{
-		repo,
+	repo := storage.NewInMemoryStorageRepository()
+	fsm := &Fsm{
+		MetadataRepo: repo,
 	}
 
 	logStore := raft.NewInmemStore()

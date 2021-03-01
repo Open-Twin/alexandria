@@ -82,7 +82,7 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	event := &event{
+	event := metadata{
 		Service: request.Service,
 		Ip: request.Ip,
 		Type:  request.Type,
@@ -106,9 +106,9 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 
 	if err != nil{
-		sendResponse(request.Service,request.Key,"error","something went wrong. please check your input.",w)
+		sendHttpResponse(request.Service,request.Key,"error","something went wrong. please check your input.",w)
 	}else {
-		sendResponse(request.Service,request.Key,"ok","null",w)
+		sendHttpResponse(request.Service,request.Key,"ok","null",w)
 	}
 }
 
@@ -135,19 +135,19 @@ func (server *HttpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 
 	log.Print("DEJAN3: "+request.Service+" "+request.Ip+" "+request.Type+" "+request.Key)
 
-	respValue, err := server.Node.fsm.Repo.Read(request.Service,request.Ip,request.Key)
+	respValue, err := server.Node.fsm.MetadataRepo.Read(request.Service,request.Ip,request.Key)
 
 	if err != nil{
-		sendResponse(request.Service,request.Key,"error",err.Error(),w)
+		sendHttpResponse(request.Service,request.Key,"error",err.Error(),w)
 
 	}else {
-		sendResponse(request.Service,request.Key,"data",respValue,w)
+		sendHttpResponse(request.Service,request.Key,"data",respValue,w)
 	}
 }
 
 /*
 handles a /join request and attempts to join the node
- */
+*/
 func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 	peerAddress := r.Header.Get("Peer-Address")
 	if peerAddress == "" {
@@ -167,7 +167,7 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func sendResponse(service, key, etype, value string, w http.ResponseWriter){
+func sendHttpResponse(service, key, etype, value string, w http.ResponseWriter){
 
 	valueMap := map[string]string{
 		"Type": etype,
@@ -193,3 +193,5 @@ func sendResponse(service, key, etype, value string, w http.ResponseWriter){
 
 	w.Write(responseBytes)
 }
+
+
