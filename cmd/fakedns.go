@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+/**
+Pretends to be a dns server for testing
+ */
 func main() {
 	connect, err := net.ListenPacket("udp", ":53")
 

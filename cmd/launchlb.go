@@ -12,6 +12,7 @@ func main() {
 	quit := make(chan struct{})
 	lb := loadbalancing.StartAlexandriaLoadbalancer(53)
 
+	// adds all the dns nodes in the arguments to the loadbalancer
 	for _, ip := range args {
 		lb.AddDns(ip)
 	}

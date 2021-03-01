@@ -5,25 +5,30 @@ import (
 	"github.com/Open-Twin/alexandria/communication"
 	"net"
 	"strconv"
+	"sync"
 )
 
-//TODO: Comments, Multithreading Support, DNS answer
-
 type AlexandriaBalancer struct {
+	dnsport    int
 	dnsservers []string
 	pointer    int
-	dnsport    int
+	lock       sync.RWMutex
 }
 
+/**
+Starts listening for connections on the specified dns port
+*/
 func StartAlexandriaLoadbalancer(dnsport int) *AlexandriaBalancer {
-	lb := AlexandriaBalancer{[]string{}, 0, dnsport}
+	lb := AlexandriaBalancer{dnsport, []string{}, 0, sync.RWMutex{}}
 
 	udpServer := communication.UDPServer{
 		Address: []byte{0, 0, 0, 0},
 		Port:    dnsport,
 	}
 
+	// Listen for connections
 	go udpServer.StartUDP(func(addr net.Addr, msg []byte) []byte {
+		// Run the method for every message received
 		go lb.forwardMsg(addr, msg)
 		return []byte("request forwarded")
 	})
@@ -31,11 +36,24 @@ func StartAlexandriaLoadbalancer(dnsport int) *AlexandriaBalancer {
 	return &lb
 }
 
+/**
+Adds a node to the list of loadbalaced dns nodes
+*/
 func (l *AlexandriaBalancer) AddDns(dnsIp string) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	// append new node to list
 	l.dnsservers = append(l.dnsservers, dnsIp)
 }
 
+/**
+Removes a node from the loadbalanced dns nodes
+ */
 func (l *AlexandriaBalancer) RemoveDns(dnsIp string) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	index := -1
 	// search for item in list
 	for i := 0; i < len(l.dnsservers); i++ {
@@ -45,18 +63,31 @@ func (l *AlexandriaBalancer) RemoveDns(dnsIp string) {
 		}
 	}
 
+	// If the itmes was found
 	if index != -1 {
+		// append everthing before and after the item
 		l.dnsservers = append(l.dnsservers[:index], l.dnsservers[index+1:]...)
 	}
 }
 
+/**
+Returns all loadbalanced dns entries
+ */
 func (l *AlexandriaBalancer) GetDnsEntries() []string {
 	return l.dnsservers
 }
 
+/**
+Returns the next address in the list of loadbalanced nodes
+ */
 func (l *AlexandriaBalancer) nextAddr() string {
-	// Implementation of the loadbalancing
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	// implementation of the loadbalancing algorithm (round robin)
+	// move the pointer one ahead
 	l.pointer++
+	// if the pointer is larger than the number of nodes it has to be reset
 	if l.pointer >= len(l.dnsservers) {
 		l.pointer = 0
 	}
@@ -65,8 +96,11 @@ func (l *AlexandriaBalancer) nextAddr() string {
 	return address
 }
 
+/**
+Forwards an incoming message to a dns node
+ */
 func (l *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
-	fmt.Println("Message received: "+string(msg))
+	fmt.Println("Message received: " + string(msg))
 
 	if len(l.dnsservers) == 0 {
 		fmt.Println("No dns nodes to forward to.")
