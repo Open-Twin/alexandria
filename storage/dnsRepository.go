@@ -47,7 +47,7 @@ func (imsp *StorageRepository) Exists(hostname string) bool {
 }
 
 // Adding the create function, which basically just adds a new entry to the map
-func (imsp *StorageRepository) Create(hostname string, value dns.DNSResourceRecord) error {
+func (imsp *StorageRepository) Create(hostname string, record dns.DNSResourceRecord) error {
 	imsp.mutex.Lock()
 	defer imsp.mutex.Unlock()
 
@@ -55,7 +55,7 @@ func (imsp *StorageRepository) Create(hostname string, value dns.DNSResourceReco
 		return errors.New("already exists: the entry you'd like to create already exists")
 	} else {
 		//imsp.Entries[hostname]=make(map[string]dns.DNSResourceRecord)
-		imsp.Entries[hostname] = value
+		imsp.Entries[hostname] = record
 		if !imsp.Exists(hostname) {
 			return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 		}

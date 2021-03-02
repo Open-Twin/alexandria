@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/raft"
 	"io"
 	"log"
+	"strconv"
 )
 
 
@@ -16,7 +17,7 @@ type Fsm struct{
 	DnsRepo *storage.StorageRepository
 }
 type metadata struct {
-	dnsormetadata bool
+	Dnsormetadata bool
 	Service string
 	Ip      string
 	Type    string
@@ -24,8 +25,11 @@ type metadata struct {
 	Value   string
 }
 type dnsresource struct {
-	dnsormetadata bool
-	record dns.DNSResourceRecord
+	Dnsormetadata bool
+	Hostname string
+	Ip string
+	RequestType string
+	ResourceRecord dns.DNSResourceRecord
 }
 
 // Apply log is invoked once a log entry is committed.
@@ -35,13 +39,17 @@ type dnsresource struct {
 func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
 	var m metadata
 	var d dnsresource
-	var dnsOrMetadata bool
-	if err := json.Unmarshal(logEntry.Data, &dnsOrMetadata); err != nil {
-		panic("Failed unmarshaling Raft log entry. This is a bug.")
+
+	dnsormeta := struct{
+		DnsOrMetadata bool
+	}{}
+	if err := json.Unmarshal(logEntry.Data, &dnsormeta); err != nil {
+		panic("Failed unmarshaling dnsormetadata log entry.")
 	}
-	if dnsOrMetadata {
-		if err := json.Unmarshal(logEntry.Data, &d.record); err != nil {
-			panic("Failed unmarshaling Raft log entry. This is a bug.")
+	log.Println("dnsormetadata: "+strconv.FormatBool(dnsormeta.DnsOrMetadata))
+	if dnsormeta.DnsOrMetadata {
+		if err := json.Unmarshal(logEntry.Data, &d); err != nil {
+			panic("Failed unmarshaling Raft log entry.")
 		}
 		err := applyToDnsStore(fsm, d)
 		if err != nil{
@@ -49,7 +57,7 @@ func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
 		}
 	}else{
 		if err := json.Unmarshal(logEntry.Data, &m); err != nil {
-			panic("Failed unmarshaling Raft log entry. This is a bug.")
+			panic("Failed unmarshaling Raft log entry.")
 		}
 		err := applyToMetadataStore(fsm, m)
 		if err != nil{
@@ -81,33 +89,33 @@ func applyToMetadataStore(fsm *Fsm, e metadata) error{
 		}
 		return nil
 	default:
-		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s. This is a bug.", e.Type))
+		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s.", e.Type))
 	}
 }
 
 func applyToDnsStore(fsm *Fsm, e dnsresource) error {
-	/*switch e.Type {
+	switch e.RequestType {
 	case "store":
-		err := fsm.DnsRepo.Create(,e.Value)
+		err := fsm.DnsRepo.Create(e.Hostname, e.ResourceRecord)
 		if err != nil{
 			log.Print("store error: "+err.Error())
 		}
 		return nil
 	case "update":
-		err := fsm.DnsRepo.Update(e.Service,e.Ip,e.Key,e.Value)
+		err := fsm.DnsRepo.Update(e.Hostname,e.ResourceRecord)
 		if err != nil{
 			log.Print("update error: "+err.Error())
 		}
 		return nil
 	case "delete":
-		err := fsm.DnsRepo.Delete(e.Service,e.Ip,e.Key)
+		err := fsm.DnsRepo.Delete(e.Hostname)
 		if err != nil{
 			log.Print("delete error: "+err.Error())
 		}
 		return nil
 	default:
-		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s. This is a bug.", e.Type))
-	}*/
+		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s.", e.RequestType))
+	}
 	return nil
 }
 

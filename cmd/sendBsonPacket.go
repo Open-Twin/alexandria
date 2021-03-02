@@ -24,6 +24,10 @@ func main() {
 		"Type" : "store",
 	}
 
+	sendBsonMessage(address, msg)
+}
+
+func sendBsonMessage(address string, msg bson.M) {
 	conn, err := net.Dial("udp", address)
 	defer conn.Close()
 	if err != nil {
@@ -31,7 +35,6 @@ func main() {
 	}
 	sendMsg, err := bson.Marshal(msg)
 
-	// fmt.Fprint(conn, sendMsg)
 	conn.Write(sendMsg)
 	fmt.Printf("Message sent: %s\n", sendMsg)
 

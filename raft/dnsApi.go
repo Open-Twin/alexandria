@@ -2,13 +2,13 @@ package raft
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/dns"
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net"
 	"time"
+	"strings"
 )
 
 type DnsApi struct {
@@ -34,46 +34,31 @@ func (api *DnsApi) StartDnsApi() {
 }
 
 func handleData(addr net.Addr, buf []byte, node *node, logger *log.Logger) []byte{
-
 	request := struct {
-		//record dns.DNSResourceRecord
-		Labels []string `bson:"Labels"`
-		Type	uint16	`bson:"Type"`
-		Class	uint16	`bson:"Class"`
-		TimeToLive uint32	`bson:"TimeToLive"`
-		ResourceDataLength uint16	`bson:"ResourceDataLength"`
-		ResourceData []byte	`bson:"ResourceData"`
+		Hostname string `bson:"Hostname"`
+		Ip string `bson:"Ip"`
 		RequestType string `bson:"RequestType"`
 	}{}
-
 
 	if err := bson.Unmarshal(buf, &request); err != nil {
 		logger.Println("Bad requesti: "+err.Error())
 		return createResponse("","error","something went wrong. please check your input.")
 	}
-	record := dns.DNSResourceRecord{
-		Labels: request.Labels,
-		Type: request.Type,
-		Class: request.Class,
-		TimeToLive: request.TimeToLive,
-		ResourceDataLength: request.ResourceDataLength,
-		ResourceData: request.ResourceData,
-	}
-	logger.Println(fmt.Sprintf("%+v\n", record))
-	event := dnsresource{
-		Dnsormetadata: true,
-		RequestType: request.RequestType,
-		Record: record,
-	}
 
 	//query if domain exists
-	domainName := ""
-	for _, part := range record.Labels {
-		domainName = part + domainName
-	}
-	exists := node.fsm.DnsRepo.Exists(domainName)
+	exists := node.fsm.DnsRepo.Exists(request.Hostname)
 	if exists{
 		return createResponse("","error","domain name already exists.")
+	}
+	//create new resource record
+	rrecord := generateResourceRecord(request.Hostname, request.Ip)
+	//marshal record
+	event := dnsresource{
+		Dnsormetadata: true,
+		Hostname: request.Hostname,
+		Ip: request.Ip,
+		RequestType: request.RequestType,
+		ResourceRecord: rrecord,
 	}
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
@@ -89,9 +74,29 @@ func handleData(addr net.Addr, buf []byte, node *node, logger *log.Logger) []byt
 	if err != nil{
 		resp = createResponse("","error","something went wrong. please check your input.")
 	}else {
-		resp = createResponse(domainName,"ok","null")
+		resp = createResponse(request.Hostname,"ok","null")
 	}
 	return resp
+}
+
+func generateResourceRecord(hostname, ip string) dns.DNSResourceRecord {
+	// split the string at the dots
+	labels := strings.Split(hostname, ".")
+
+	// reverse the slice order
+	for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
+		labels[i], labels[j] = labels[j], labels[i]
+	}
+
+	rrecord := dns.DNSResourceRecord{
+		Labels:             labels,
+		Type:               12,
+		Class:              12,
+		TimeToLive:         12,
+		ResourceDataLength: 12,
+		ResourceData:       []byte(ip),
+	}
+	return rrecord
 }
 
 func createResponse(domain, etype, value string) []byte{
