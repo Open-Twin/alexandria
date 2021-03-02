@@ -2,11 +2,10 @@ package loadbalancing
 
 import (
 	"fmt"
+	"github.com/go-ping/ping"
 	"io/ioutil"
 	"net/http"
-	"os/exec"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -64,18 +63,28 @@ func (node *Node) sendHttpCheck() {
 }
 
 func (node *Node) sendPingCheck() {
-	os := runtime.GOOS
-	var out []byte
-	if os == "windows" {
-		out, _ = exec.Command("ping", "-n", "2", "-i", "10", "-w", "10", node.ip).Output()
-	} else {
-		out, _ = exec.Command("ping", "-c", "2", "-i", "3", "-w", "10", node.ip).Output()
+	pinger, err := ping.NewPinger(node.ip)
+	if err != nil {
+		fmt.Printf("Error on creating pinger: %s\n", err.Error())
 	}
-	if strings.Contains(string(out), "2 received") {
-		fmt.Printf("Node %s healthy. Response: %v\n", node.ip, string(out))
+
+	os := runtime.GOOS
+	if os == "windows" {
+		pinger.SetPrivileged(true)
+	}
+
+	pinger.Count = 3
+	err = pinger.Run()
+	if err != nil {
+		fmt.Printf("Error on sending ping: %s\n", err.Error())
+	}
+
+	stats := pinger.Statistics()
+	if stats.PacketsRecv > 1 {
+		fmt.Printf("Node %s healthy. Statistics: %v\n", node.ip, stats)
 		node.healthy = true
 	} else {
-		fmt.Printf("Node %s could not be reached. Response: %v\n", node.ip, string(out))
+		fmt.Printf("Node %s could not be reached. Statistics: %v\n", node.ip, stats)
 		node.healthy = false
 	}
 }
