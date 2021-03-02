@@ -55,3 +55,11 @@ func TestRemoveNonExistent(t *testing.T) {
 	hc := HealthCheck{}
 	hc.RemoveNode("192.168.0.1")
 }
+
+func TestPingHealthcheck(t *testing.T) {
+
+}
+
+func TestNodeOffline(t *testing.T) {
+
+}
