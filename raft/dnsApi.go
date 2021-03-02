@@ -2,9 +2,10 @@ package raft
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/dns"
-	"go.mongodb.org/mongo-driver/bson"
+	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net"
 	"time"
@@ -35,24 +36,39 @@ func (api *DnsApi) StartDnsApi() {
 func handleData(addr net.Addr, buf []byte, node *node, logger *log.Logger) []byte{
 
 	request := struct {
-		dnsormetadata bool
-		record dns.DNSResourceRecord
+		//record dns.DNSResourceRecord
+		Labels []string `bson:"Labels"`
+		Type	uint16	`bson:"Type"`
+		Class	uint16	`bson:"Class"`
+		TimeToLive uint32	`bson:"TimeToLive"`
+		ResourceDataLength uint16	`bson:"ResourceDataLength"`
+		ResourceData []byte	`bson:"ResourceData"`
+		RequestType string `bson:"RequestType"`
 	}{}
 
+
 	if err := bson.Unmarshal(buf, &request); err != nil {
-		logger.Println("Bad request")
+		logger.Println("Bad requesti: "+err.Error())
 		return createResponse("","error","something went wrong. please check your input.")
 	}
-
-	event := dnsresource{
-		dnsormetadata: true,
-		record: request.record,
+	record := dns.DNSResourceRecord{
+		Labels: request.Labels,
+		Type: request.Type,
+		Class: request.Class,
+		TimeToLive: request.TimeToLive,
+		ResourceDataLength: request.ResourceDataLength,
+		ResourceData: request.ResourceData,
 	}
-	log.Print("DEJANDNS: ")
+	logger.Println(fmt.Sprintf("%+v\n", record))
+	event := dnsresource{
+		Dnsormetadata: true,
+		RequestType: request.RequestType,
+		Record: record,
+	}
 
 	//query if domain exists
 	domainName := ""
-	for _, part := range request.record.Labels {
+	for _, part := range record.Labels {
 		domainName = part + domainName
 	}
 	exists := node.fsm.DnsRepo.Exists(domainName)
