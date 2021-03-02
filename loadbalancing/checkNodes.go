@@ -81,10 +81,10 @@ func (node *Node) sendPingCheck() {
 
 	stats := pinger.Statistics()
 	if stats.PacketsRecv > 1 {
-		fmt.Printf("Node %s healthy. Statistics: %v\n", node.ip, stats)
+		fmt.Printf("Node %s healthy. Statistics: %+v\n", node.ip, stats)
 		node.healthy = true
 	} else {
-		fmt.Printf("Node %s could not be reached. Statistics: %v\n", node.ip, stats)
+		fmt.Printf("Node %s could not be reached. Statistics: %+v\n", node.ip, stats)
 		node.healthy = false
 	}
 }
