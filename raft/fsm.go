@@ -2,7 +2,6 @@ package raft
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
@@ -89,8 +88,9 @@ func applyToMetadataStore(fsm *Fsm, e metadata) error{
 		}
 		return nil
 	default:
-		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s.", e.Type))
+		log.Printf("Unrecognized event type in Raft log entry: %s.", e.Type)
 	}
+	return nil
 }
 
 func applyToDnsStore(fsm *Fsm, e dnsresource) error {
@@ -114,7 +114,7 @@ func applyToDnsStore(fsm *Fsm, e dnsresource) error {
 		}
 		return nil
 	default:
-		panic(fmt.Sprintf("Unrecognized event type in Raft log entry: %s.", e.RequestType))
+		log.Printf("Unrecognized event type in Raft log entry: %s.", e.RequestType)
 	}
 	return nil
 }

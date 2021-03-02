@@ -7,8 +7,9 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net"
-	"time"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type DnsApi struct {
@@ -87,13 +88,15 @@ func generateResourceRecord(hostname, ip string) dns.DNSResourceRecord {
 	for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
 		labels[i], labels[j] = labels[j], labels[i]
 	}
-
+	log.Println("data length: "+ strconv.Itoa(int(uint16(len([]byte(ip))))))
+	log.Println("ip: "+string([]byte(ip)))
+	//TODO: values sind irgendwas
 	rrecord := dns.DNSResourceRecord{
 		Labels:             labels,
-		Type:               12,
-		Class:              12,
-		TimeToLive:         12,
-		ResourceDataLength: 12,
+		Type:               1, // A Record
+		Class: 				1, // Internet Class
+		TimeToLive:         100,
+		ResourceDataLength: uint16(len([]byte(ip))),
 		ResourceData:       []byte(ip),
 	}
 	return rrecord
@@ -118,4 +121,3 @@ func createResponse(domain, etype, value string) []byte{
 
 	return responseBytes
 }
-

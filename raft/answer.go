@@ -23,14 +23,19 @@ func addResourceRecords(pdu dns.DNSPDU, fsm *Fsm) dns.DNSPDU {
 		pdu.Header.TotalAnswerResourceRecords += 1
 
 		domainName := ""
-		for _, part := range question.Labels {
-			domainName = part + domainName
+		for i, part := range question.Labels {
+			domainName += part
+			if i < len(question.Labels)-1 {
+				domainName += "."
+			}
 		}
-		query, err := fsm.DnsRepo.Read(domainName)
 
+		log.Print("read dns")
+		query, err := fsm.DnsRepo.Read(domainName)
 		if err != nil{
 			logging.Print(err.Error())
 		}
+		//log.Println("query dns: "+query.Labels[1])
 		pdu.AnswerResourceRecords = append(pdu.AnswerResourceRecords, query)
 	}
 	return pdu

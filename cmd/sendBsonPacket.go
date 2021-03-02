@@ -21,7 +21,7 @@ func main() {
 	msg := bson.M{
 		"Hostname": "dejan.ac.at",
 		"Ip" : "1.2.3.4",
-		"Type" : "store",
+		"RequestType" : "store",
 	}
 
 	sendBsonMessage(address, msg)

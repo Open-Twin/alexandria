@@ -22,9 +22,13 @@ func (api *DnsEntrypoint) StartDnsEntrypoint(){
 	log.Println("Starting DNS entrypoint")
 	server.StartUDP(func(addr net.Addr, buf []byte) []byte {
 		pdu := dns.HandleRequest(addr, buf)
-
+		log.Println("-------------------create answer-------------------")
 		answer := CreateAnswer(pdu, api.Node.fsm, api.Logger)
-
+		log.Println(answer.Header)
+		log.Println(answer.Flags)
+		log.Println(answer.AnswerResourceRecords)
+		log.Println(string(answer.AnswerResourceRecords[0].ResourceData))
+		log.Println("-------------------answer end-------------------")
 		return PrepareToSend(answer)
 	})
 }

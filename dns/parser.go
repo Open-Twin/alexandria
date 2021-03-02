@@ -41,7 +41,7 @@ func HandleRequest(addr net.Addr, requestData []byte) DNSPDU {
 	log.Printf("------Body--------\n %+v \n", body)
 
 
-	// Send stupid answer
+	// Send answer
 	return body
 }
 
