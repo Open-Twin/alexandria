@@ -42,15 +42,10 @@ func handleData(addr net.Addr, buf []byte, node *node, logger *log.Logger) []byt
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {
-		logger.Println("Bad requesti: "+err.Error())
+		logger.Println("Bad request: "+err.Error())
 		return createResponse("","error","something went wrong. please check your input.")
 	}
 
-	//query if domain exists
-	exists := node.fsm.DnsRepo.Exists(request.Hostname)
-	if exists{
-		return createResponse("","error","domain name already exists.")
-	}
 	//create new resource record
 	rrecord := generateResourceRecord(request.Hostname, request.Ip)
 	//marshal record

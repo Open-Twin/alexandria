@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"github.com/Open-Twin/alexandria/dns"
+	"log"
 	"sync"
 )
 
@@ -23,7 +24,7 @@ type DNSRepository interface {
 // Predefined variables for the usage in this class
 
 type hostname = string
-type values = dns.DNSResourceRecord
+type values = []dns.DNSResourceRecord
 
 // Creating a structure for the Metadata containing the necessary variables
 type StorageRepository struct {
@@ -53,7 +54,7 @@ func (imsp *StorageRepository) Create(hostname string, record dns.DNSResourceRec
 	} else {
 		//imsp.Entries[hostname]=make(map[string]dns.DNSResourceRecord)
 		imsp.mutex.Lock()
-		imsp.Entries[hostname] = record
+		imsp.Entries[hostname] = append(imsp.Entries[hostname], record)
 		imsp.mutex.Unlock()
 		if !imsp.Exists(hostname) {
 			return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
@@ -67,21 +68,30 @@ func (imsp *StorageRepository) Read(hostname string) (dns.DNSResourceRecord, err
 	imsp.mutex.RLock()
 	defer imsp.mutex.RUnlock()
 	if !imsp.Exists(hostname) {
-		return imsp.Entries[hostname], errors.New("no entry: as it looks like for this specific service no entry was made")
+		//TODO: works?
+		return imsp.Entries[hostname][0], errors.New("no entry: as it looks like for this specific service no entry was made")
 	}
-	return imsp.Entries[hostname], nil
+	//TODO: query with loadbalacing algorithms (least connected?)
+	log.Print("READ: ")
+	log.Println(imsp.Entries[hostname])
+	return imsp.Entries[hostname][0], nil
 }
 
 // Adding the update function, which basically just replaces a specific value of the given service with the new given value
 func (imsp *StorageRepository) Update(hostname string, value dns.DNSResourceRecord) error {
 	imsp.mutex.Lock()
 	defer imsp.mutex.Unlock()
-	if imsp.Exists(hostname) {
+	/*if imsp.Exists(hostname) {
 		imsp.Entries[hostname] = value
 	}else {
-		imsp.Create(hostname, value)
 		return errors.New("not existing: the entry you'd like to update didnt exist, instead it was created")
+	}*/
+	//TODO: langsam?
+	index := getIndexFromResourceRecord(hostname,imsp.Entries)
+	if index == -1 {
+		return errors.New("not existing: the entry you'd like to update didnt exist")
 	}
+	imsp.Entries[hostname][index] = value
 	return nil
 }
 
@@ -89,10 +99,36 @@ func (imsp *StorageRepository) Update(hostname string, value dns.DNSResourceReco
 func (imsp *StorageRepository) Delete(hostname string) error {
 	imsp.mutex.Lock()
 	defer imsp.mutex.Unlock()
-	if imsp.Exists(hostname) {
+	/*if imsp.Exists(hostname) {
 		delete(imsp.Entries, hostname)
 	}else {
 		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong, to delete the entry")
+	}*/
+	//TODO: langsam?
+	index := getIndexFromResourceRecord(hostname,imsp.Entries)
+	if index == -1 {
+		return errors.New("not existing: the entry you'd like to update didnt exist")
 	}
+	//delete from slice
+	//TODO: langsam?
+	imsp.Entries[hostname][index] = imsp.Entries[hostname][len(imsp.Entries[hostname])-1]
+	newSlice := imsp.Entries[hostname][:len(imsp.Entries[hostname])-1]
+	imsp.Entries[hostname] = newSlice
 	return nil
+}
+
+func getIndexFromResourceRecord(hostname string, m map[hostname]values) int{
+	for i, obj := range m[hostname] {
+		domainName := ""
+		for i2, part := range obj.Labels {
+			domainName += part
+			if i2 < len(obj.Labels)-1 {
+				domainName += "."
+			}
+		}
+		if domainName == hostname{
+			return i
+		}
+	}
+	return -1
 }
