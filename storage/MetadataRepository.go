@@ -20,12 +20,6 @@ type MetadataRepository interface {
 	Delete(service, ip, key string) error
 }
 
-// Predefined variables for the usage in this class
-type service = string
-type ip = string
-type key = string
-type value = string
-
 // Creating a structure for the Metadata containing the necessary variables
 type InMemoryStorageRepository struct {
 	// Global Metadata variable for this class

@@ -96,19 +96,19 @@ func applyToMetadataStore(fsm *Fsm, e metadata) error{
 func applyToDnsStore(fsm *Fsm, e dnsresource) error {
 	switch e.RequestType {
 	case "store":
-		err := fsm.DnsRepo.Create(e.Hostname, e.ResourceRecord)
+		err := fsm.DnsRepo.Create(e.Hostname, e.Ip, e.ResourceRecord)
 		if err != nil{
 			log.Print("store error: "+err.Error())
 		}
 		return nil
 	case "update":
-		err := fsm.DnsRepo.Update(e.Hostname,e.ResourceRecord)
+		err := fsm.DnsRepo.Update(e.Hostname, e.Ip, e.ResourceRecord)
 		if err != nil{
 			log.Print("update error: "+err.Error())
 		}
 		return nil
 	case "delete":
-		err := fsm.DnsRepo.Delete(e.Hostname)
+		err := fsm.DnsRepo.Delete(e.Hostname, e.Ip)
 		if err != nil{
 			log.Print("delete error: "+err.Error())
 		}
