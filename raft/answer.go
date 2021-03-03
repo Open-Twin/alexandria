@@ -7,18 +7,18 @@ import (
 
 var logging *log.Logger
 
-func CreateAnswer(request dns.DNSPDU, fsm *Fsm, logger *log.Logger) dns.DNSPDU {
+func CreateAnswer(request dns.DNSPDU, fsm *Fsm, logger *log.Logger, originalMessage []byte) dns.DNSPDU {
 	logging = logger
 
 	// set Response Flag to true
 	request.Flags.QueryResponse = true
 
-	answer := addResourceRecords(request, fsm)
+	answer := addResourceRecords(request, fsm, originalMessage)
 
 	return answer
 }
 
-func addResourceRecords(pdu dns.DNSPDU, fsm *Fsm) dns.DNSPDU {
+func addResourceRecords(pdu dns.DNSPDU, fsm *Fsm, originalMessage []byte) dns.DNSPDU {
 	for _, question := range pdu.Questions{
 		pdu.Header.TotalAnswerResourceRecords += 1
 
@@ -30,12 +30,18 @@ func addResourceRecords(pdu dns.DNSPDU, fsm *Fsm) dns.DNSPDU {
 			}
 		}
 
-		log.Print("read dns")
 		query, err := fsm.DnsRepo.Read(domainName)
 		if err != nil{
 			logging.Print(err.Error())
+			/*if pdu.Flags.RecursionDesired {
+				//TODO: recursive lookup
+				if pdu.
+				recursiveAnswer, recErr := dns.RecursiveLookup(originalMessage)
+				if recErr != nil {
+					logging.Print(recErr.Error())
+				}
+			}*/
 		}
-		//log.Println("query dns: "+query.Labels[1])
 		pdu.AnswerResourceRecords = append(pdu.AnswerResourceRecords, query)
 	}
 	return pdu

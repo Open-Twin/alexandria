@@ -23,7 +23,7 @@ func (api *DnsEntrypoint) StartDnsEntrypoint(){
 	server.StartUDP(func(addr net.Addr, buf []byte) []byte {
 		pdu := dns.HandleRequest(addr, buf)
 		log.Println("-------------------create answer-------------------")
-		answer := CreateAnswer(pdu, api.Node.fsm, api.Logger)
+		answer := CreateAnswer(pdu, api.Node.fsm, api.Logger, buf []byte)
 		log.Println(answer.Header)
 		log.Println(answer.Flags)
 		log.Println(answer.AnswerResourceRecords)
