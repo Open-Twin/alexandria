@@ -37,6 +37,7 @@ func (flags DNSFlags) WriteFlags() uint16 {
 
 func writeLabels(responseBuffer *bytes.Buffer, labels []string) error {
 	//If the label is nil, we just insert a DNS pointer to the request FQDN position (byte 13)
+	//TODO
 	if labels == nil {
 		_, err := responseBuffer.Write([]byte{0xc0, 0x0c})
 		return err

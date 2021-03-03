@@ -28,6 +28,7 @@ type InMemoryStorageRepository struct {
 	metadataMu sync.RWMutex
 
 }
+
 func NewInMemoryStorageRepository() *InMemoryStorageRepository {
 	 metadata := make(map[service]map[ip]map[key]value)
 	 return &InMemoryStorageRepository{
@@ -68,6 +69,9 @@ func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) er
 func (imsp *InMemoryStorageRepository) Read(service, ip, key string) (string, error) {
 	imsp.metadataMu.RLock()
 	defer imsp.metadataMu.RUnlock()
+
+	// TODO: Loadbalancer
+
 	if !imsp.Exists(service, ip, key) {
 		return imsp.Metadata[service][ip][key], errors.New("no entry: as it looks like for this specific service no entry was made")
 	}

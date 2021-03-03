@@ -83,16 +83,25 @@ func generateResourceRecord(hostname, ip string) dns.DNSResourceRecord {
 	for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
 		labels[i], labels[j] = labels[j], labels[i]
 	}
-	log.Println("data length: "+ strconv.Itoa(int(uint16(len([]byte(ip))))))
-	log.Println("ip: "+string([]byte(ip)))
-	//TODO: values sind irgendwas
+
+	//log.Println("data length: "+ strconv.Itoa(int(uint16(len([]byte(ip))))))
+	//log.Println("ip: "+string([]byte(ip)))
+
+	ipSections := strings.Split(ip, ".")
+	ipByte := make([]byte, 4)
+	for index, section := range ipSections {
+		num, _ := strconv.Atoi(section)
+		ipByte[index] = byte(num)
+	}
+
+	//TODO: values sind nur A records
 	rrecord := dns.DNSResourceRecord{
 		Labels:             labels,
 		Type:               1, // A Record
 		Class: 				1, // Internet Class
 		TimeToLive:         100,
-		ResourceDataLength: uint16(len([]byte(ip))),
-		ResourceData:       []byte(ip),
+		ResourceDataLength: uint16(len(ipByte)),
+		ResourceData:       ipByte,
 	}
 	return rrecord
 }

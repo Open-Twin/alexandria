@@ -42,6 +42,9 @@ func addResourceRecords(pdu dns.DNSPDU, fsm *Fsm, originalMessage []byte) dns.DN
 				}
 			}*/
 		}
+		log.Print("FABIAN:")
+		log.Println(query)
+		log.Print("--------")
 		pdu.AnswerResourceRecords = append(pdu.AnswerResourceRecords, query)
 	}
 	return pdu
