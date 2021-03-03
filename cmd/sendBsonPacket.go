@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gopkg.in/mgo.v2/bson"
 	"net"
+	"os"
 )
 
 func main() {
@@ -19,8 +20,8 @@ func main() {
 		"RequestType":		  "store",
 	}*/
 	msg := bson.M{
-		"Hostname": "dejan.ac.at",
-		"Ip" : "1.2.3.4",
+		"Hostname": os.Args[1],
+		"Ip" : os.Args[2],
 		"RequestType" : "store",
 	}
 

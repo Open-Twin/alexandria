@@ -49,16 +49,13 @@ func (imsp *StorageRepository) Exists(hostname string) bool {
 
 // Adding the create function, which basically just adds a new entry to the map
 func (imsp *StorageRepository) Create(hostname string, record dns.DNSResourceRecord) error {
-	if imsp.Exists(hostname) {
-		return errors.New("already exists: the entry you'd like to create already exists")
-	} else {
-		//imsp.Entries[hostname]=make(map[string]dns.DNSResourceRecord)
-		imsp.mutex.Lock()
-		imsp.Entries[hostname] = append(imsp.Entries[hostname], record)
-		imsp.mutex.Unlock()
-		if !imsp.Exists(hostname) {
-			return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
-		}
+	log.Print("CREATE: "+hostname)
+	//imsp.Entries[hostname]=make(map[string]dns.DNSResourceRecord)
+	imsp.mutex.Lock()
+	imsp.Entries[hostname] = append(imsp.Entries[hostname], record)
+	imsp.mutex.Unlock()
+	if !imsp.Exists(hostname) {
+		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 	}
 	return nil
 }
@@ -72,8 +69,9 @@ func (imsp *StorageRepository) Read(hostname string) (dns.DNSResourceRecord, err
 		return imsp.Entries[hostname][0], errors.New("no entry: as it looks like for this specific service no entry was made")
 	}
 	//TODO: query with loadbalacing algorithms (least connected?)
-	log.Print("READ: ")
+	log.Print("READ: "+hostname)
 	log.Println(imsp.Entries[hostname])
+	log.Print("----")
 	return imsp.Entries[hostname][0], nil
 }
 
