@@ -6,15 +6,23 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"net"
 	"os"
+	reflreflect "reflect"
+	"strings"
 	"testing"
 )
+
+type answerFormat struct {
+	Domain string
+	Error string
+	Value string
+}
 
 func TestMain(m *testing.M) {
 	code := m.Run()
 	os.Exit(code)
 }
 
-func SendBsonMessage(address string, msg bson.M) {
+func SendBsonMessage(address string, msg bson.M) string {
 	conn, err := net.Dial("udp", address)
 	defer conn.Close()
 	if err != nil {
@@ -32,6 +40,8 @@ func SendBsonMessage(address string, msg bson.M) {
 	} else {
 		fmt.Printf("Error on receiving answer: %v", err)
 	}
+
+	return string(answer)
 }
 
 func TestStoreEntry(t *testing.T) {
@@ -41,7 +51,12 @@ func TestStoreEntry(t *testing.T) {
 		"RequestType" : "store",
 	}
 
-	SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	answerVals := answerFormat{}
+	bson.Marshal(answerVals)
+	if answerVals.Error != "ok" {
+		t.Error("Store failed: %s", ans)
+	}
 }
 
 func TestUpdateEntry(t *testing.T) {
@@ -51,7 +66,12 @@ func TestUpdateEntry(t *testing.T) {
 		"RequestType" : "update",
 	}
 
-	SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	answerVals := answerFormat{}
+	bson.Marshal(answerVals)
+	if answerVals.Error != "ok" {
+		t.Error("Store failed: %s", ans)
+	}
 }
 
 func TestDeleteEntry(t *testing.T) {
@@ -61,7 +81,12 @@ func TestDeleteEntry(t *testing.T) {
 		"RequestType" : "delete",
 	}
 
-	SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	answerVals := answerFormat{}
+	bson.Marshal(answerVals)
+	if answerVals.Error != "ok" {
+		t.Error("Store failed: %s", ans)
+	}
 }
 
 func TestQuery(t *testing.T) {
@@ -69,5 +94,7 @@ func TestQuery(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("Query succesful: %v\n", ips)
+	if !reflreflect.DeepEqual(ips[0], net.IP{1, 2, 3 ,4}) {
+		t.Error("Got wrong IP: %s", ips[0])
+	}
 }

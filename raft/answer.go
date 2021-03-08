@@ -12,6 +12,8 @@ func CreateAnswer(request dns.DNSPDU, fsm *Fsm, logger *log.Logger, originalMess
 
 	// set Response Flag to true
 	request.Flags.QueryResponse = true
+	//Because server can handle recursion
+	request.Flags.RecursionAvailable = true
 
 	answer := addResourceRecords(request, fsm, originalMessage)
 
