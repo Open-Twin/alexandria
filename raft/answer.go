@@ -15,6 +15,12 @@ func CreateAnswer(request dns.DNSPDU, fsm *Fsm, logger *log.Logger, originalMess
 	//Because server can handle recursion
 	request.Flags.RecursionAvailable = true
 
+	request.Flags.AuthoritativeAnswer = true
+
+	request.Flags.AuthenticData = true
+
+	request.Flags.CheckingDisabled = true
+
 	answer := addResourceRecords(request, fsm, originalMessage)
 
 	return answer

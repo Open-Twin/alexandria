@@ -86,9 +86,11 @@ func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*node, e
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
 	//raftConfig.Logger = log.New(Logger, "", 0)
-	repo := storage.NewInMemoryStorageRepository()
+	metarepo := storage.NewInMemoryStorageRepository()
+	dnsrepo := storage.NewInMemoryDNSStorageRepository()
 	fsm := &Fsm{
-		MetadataRepo: repo,
+		MetadataRepo: metarepo,
+		DnsRepo: dnsrepo,
 	}
 
 	logStore := raft.NewInmemStore()

@@ -1,37 +1,127 @@
 package raft
-/*
+
 import (
 	"encoding/json"
-	"errors"
 	"github.com/Open-Twin/alexandria/communication"
-	"github.com/Open-Twin/alexandria/dns"
-	"github.com/go-playground/validator/v10"
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net"
+	"time"
 	"strconv"
 	"strings"
-	"time"
+	"github.com/Open-Twin/alexandria/dns"
+	"github.com/go-playground/validator/v10"
+	"errors"
 )
 
-type DnsApi struct {
+type API struct {
 	Node    *node
 	Address net.Addr
 	NetworkType string
 	Logger  *log.Logger
 }
 
-func (api *DnsApi) StartDnsApi() {
-	udpserver := communication.UDPServer{
+const ipv6Type = 28
+const ipv4Type = 1
+
+func (api *API) Start() {
+	/*
+	Metadata
+	 */
+	meta_udpserver := communication.UDPServer{
+		Address: []byte{0,0,0,0},
+		Port: 20000,
+	}
+
+	log.Println("Starting DNS")
+	go meta_udpserver.StartUDP(func(addr net.Addr, buf []byte) []byte {
+		resp := handleMetadata(addr, buf, api.Node, api.Logger)
+		return resp
+	})
+
+	/*
+	DNS
+	 */
+	dns_udpserver := communication.UDPServer{
 		Address: []byte{0,0,0,0},
 		Port: 10000,
 	}
 
 	log.Println("Starting DNS")
-	udpserver.StartUDP(func(addr net.Addr, buf []byte) []byte {
+	go dns_udpserver.StartUDP(func(addr net.Addr, buf []byte) []byte {
 		resp := handleDnsdata(addr, buf, api.Node, api.Logger)
 		return resp
 	})
+}
+
+func handleMetadata(addr net.Addr, buf []byte, node *node, logger *log.Logger) []byte{
+	request := struct {
+		Service string `bson:"Service"`
+		Ip string `bson:"Ip"`
+		Type string `bson:"Type"`
+		Key string `bson:"Key"`
+		Value string `bson:"Value"`
+	}{}
+
+	if err := bson.Unmarshal(buf, &request); err != nil {
+		logger.Println("Bad request: "+err.Error())
+		return createResponse("","error","something went wrong. please check your input.")
+	}
+
+	//marshal record
+	event := metadata{
+		Dnsormetadata: false,
+		Service: request.Service,
+		Ip: request.Ip,
+		Type: request.Type,
+		Key: request.Key,
+		Value: request.Value,
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		logger.Println("")
+	}
+
+	//Apply to Raft cluster
+	applyFuture := node.raftNode.Apply(eventBytes, 5*time.Second)
+	if err := applyFuture.Error(); err != nil {
+		logger.Println("could not apply to raft cluster: "+err.Error())
+		return createMetadataResponse(request.Service,request.Key,"error",err.Error())
+	}
+	var resp []byte
+	if err != nil{
+		resp = createMetadataResponse(request.Service,request.Key,"error","something went wrong. please check your input.")
+	}else {
+		resp = createMetadataResponse(request.Service,request.Key,"ok","null")
+	}
+	return resp
+}
+
+func createMetadataResponse(service, key, etype, value string) []byte{
+
+	valueMap := map[string]string{
+		"Type": etype,
+		"Value": value,
+	}
+	response := struct {
+		Service string
+		Type string
+		Key string
+		Value map[string]string
+	}{
+		Service: service,
+		Type: "response",
+		Key: key,
+		Value: valueMap,
+	}
+
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		log.Print("sendresponse failed")
+	}
+
+	return responseBytes
 }
 
 func handleDnsdata(addr net.Addr, buf []byte, node *node, logger *log.Logger) []byte{
@@ -78,7 +168,6 @@ func handleDnsdata(addr net.Addr, buf []byte, node *node, logger *log.Logger) []
 	}
 	return resp
 }
-
 
 func generateResourceRecord(hostname, ip string) (dns.DNSResourceRecord, error) {
 	validate := validator.New()
@@ -149,4 +238,3 @@ func createResponse(domain, etype, value string) []byte{
 
 	return responseBytes
 }
-*/

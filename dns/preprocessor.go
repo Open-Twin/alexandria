@@ -29,6 +29,15 @@ func (flags DNSFlags) WriteFlags() uint16 {
 	if flags.RecursionAvailable {
 		result |= uint16(0b0000_0000_1000_0000)
 	}
+	if flags.Z {
+		result |= uint16(0b0000_0000_0100_0000)
+	}
+	if flags.AuthenticData {
+		result |= uint16(0b0000_0000_0010_0000)
+	}
+	if flags.CheckingDisabled {
+		result |= uint16(0b0000_0000_0001_0000)
+	}
 
 	result |= uint16(uint8(flags.ResponseCode) & uint8(0b0000_1111))
 

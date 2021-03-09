@@ -26,7 +26,6 @@ type InMemoryStorageRepository struct {
 	Metadata map[service]map[ip]map[key]value
 	// Creating a mutex onto the Metadata variable in order to handle threads
 	metadataMu sync.RWMutex
-
 }
 
 func NewInMemoryStorageRepository() *InMemoryStorageRepository {
@@ -37,20 +36,16 @@ func NewInMemoryStorageRepository() *InMemoryStorageRepository {
 }
 // Adding the exists function, which basically just checks if an entry for this specific service exists
 func (imsp *InMemoryStorageRepository) Exists(service, ip, key string) bool {
-	if imsp.Metadata[service][ip][key] != "" {
-		return true
-	}
-
-	return false
+	imsp.metadataMu.RLock()
+	defer imsp.metadataMu.RUnlock()
+	_, ok := imsp.Metadata[service][ip][key]
+	return ok
 }
 
 // Adding the create function, which basically just adds a new entry to the map
 func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) error {
 	imsp.metadataMu.Lock()
 	defer imsp.metadataMu.Unlock()
-
-
-
 	if imsp.Exists(service, ip, key) {
 		imsp.Metadata[service][ip][key] = value
 	} else {

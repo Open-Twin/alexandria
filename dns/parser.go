@@ -241,5 +241,3 @@ func readLabels(buffer *bytes.Buffer) ([]string, error){
 
 	return labels, nil
 }
-
-

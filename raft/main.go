@@ -67,34 +67,7 @@ func Main(){
 		}()
 	}
 
-	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
-	service := &HttpServer{
-		Node:    raftNode,
-		Address: conf.HTTPAddress,
-		Logger:  &httpLogger,
-	}
-	//starts the http service
-	go service.Start()
-
-	//metadata api start
-	/*metadataApi := &metadataApi{
-		node: raftNode,
-		Address: conf.HTTPAddress,
-		Logger: &metadataLogger,
-	}*/
-	//dns start
 	//TODO: race conditions locks???
-	//dns api
-	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	dnsApi := &DnsApi{
-		Node: raftNode,
-		//TODO: address and type from config
-		Address: conf.HTTPAddress,
-		NetworkType: "udp",
-		Logger: &dnsApiLogger,
-	}
-	go dnsApi.StartDnsApi()
-
 	//dns entrypoint
 	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsEntrypoint := &DnsEntrypoint{
@@ -103,5 +76,25 @@ func Main(){
 		Logger: &dnsEntrypointLogger,
 	}
 	dnsEntrypoint.StartDnsEntrypoint()
+
+	//dns api
+	apiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
+	api := &API{
+		Node: raftNode,
+		//TODO: address and type from config
+		Address: conf.HTTPAddress,
+		NetworkType: "udp",
+		Logger: &apiLogger,
+	}
+	api.Start()
+
+	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
+	service := &HttpServer{
+		Node:    raftNode,
+		Address: conf.HTTPAddress,
+		Logger:  &httpLogger,
+	}
+	//starts the http service (not in a goroutine so it blocks from exiting)
+	service.Start()
 }
 

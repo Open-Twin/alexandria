@@ -38,7 +38,6 @@ type dnsresource struct {
 func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
 	var m metadata
 	var d dnsresource
-
 	dnsormeta := struct{
 		DnsOrMetadata bool
 	}{}
