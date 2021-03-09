@@ -1,8 +1,10 @@
-package raft
+package communication
 
 import (
 	"encoding/json"
 	"fmt"
+	raft2 "github.com/Open-Twin/alexandria/raft"
+	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	"io/ioutil"
 	"log"
@@ -13,7 +15,7 @@ import (
 )
 
 type HttpServer struct {
-	Node    *node
+	Node    *raft2.Node
 	Address net.Addr
 	Logger  *log.Logger
 }
@@ -82,7 +84,7 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	event := metadata{
+	event := storage.Metadata{
 		Service: request.Service,
 		Ip: request.Ip,
 		Type:  request.Type,
@@ -96,7 +98,7 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 		server.Logger.Println("")
 	}
 	//Apply to Raft cluster
-	applyFuture := server.Node.raftNode.Apply(eventBytes, 5*time.Second)
+	applyFuture := server.Node.RaftNode.Apply(eventBytes, 5*time.Second)
 	if err := applyFuture.Error(); err != nil {
 		server.Logger.Println("could not apply to raft cluster: "+err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -135,7 +137,7 @@ func (server *HttpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 
 	log.Print("DEJAN3: "+request.Service+" "+request.Ip+" "+request.Type+" "+request.Key)
 
-	respValue, err := server.Node.fsm.MetadataRepo.Read(request.Service,request.Ip,request.Key)
+	respValue, err := server.Node.Fsm.MetadataRepo.Read(request.Service,request.Ip,request.Key)
 
 	if err != nil{
 		sendHttpResponse(request.Service,request.Key,"error",err.Error(),w)
@@ -146,7 +148,7 @@ func (server *HttpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 }
 
 /*
-handles a /join request and attempts to join the node
+handles a /join request and attempts to join the Node
 */
 func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 	peerAddress := r.Header.Get("Peer-Address")
@@ -155,7 +157,7 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	addPeerFuture := server.Node.raftNode.AddVoter(
+	addPeerFuture := server.Node.RaftNode.AddVoter(
 		raft.ServerID(peerAddress), raft.ServerAddress(peerAddress), 0, 0)
 	if err := addPeerFuture.Error(); err != nil {
 		server.Logger.Printf("\"Error joining peer to Raft\" %v\n", peerAddress)

@@ -2,7 +2,6 @@ package raft
 
 import (
 	"encoding/json"
-	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	"io"
@@ -15,29 +14,14 @@ type Fsm struct{
 	MetadataRepo *storage.InMemoryStorageRepository
 	DnsRepo *storage.StorageRepository
 }
-type metadata struct {
-	Dnsormetadata bool
-	Service string
-	Ip      string
-	Type    string
-	Key     string
-	Value   string
-}
-type dnsresource struct {
-	Dnsormetadata bool
-	Hostname string
-	Ip string
-	RequestType string
-	ResourceRecord dns.DNSResourceRecord
-}
 
 // Apply log is invoked once a log entry is committed.
 // It returns a value which will be made available in the
 // ApplyFuture returned by Raft.Apply method if that
 // method was called on the same Raft node as the FSM.
 func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
-	var m metadata
-	var d dnsresource
+	var m storage.Metadata
+	var d storage.Dnsresource
 	dnsormeta := struct{
 		DnsOrMetadata bool
 	}{}
@@ -66,7 +50,7 @@ func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
 	return nil
 }
 
-func applyToMetadataStore(fsm *Fsm, e metadata) error{
+func applyToMetadataStore(fsm *Fsm, e storage.Metadata) error{
 	switch e.Type {
 	case "store":
 		err := fsm.MetadataRepo.Create(e.Service,e.Ip,e.Key,e.Value)
@@ -92,7 +76,7 @@ func applyToMetadataStore(fsm *Fsm, e metadata) error{
 	return nil
 }
 
-func applyToDnsStore(fsm *Fsm, e dnsresource) error {
+func applyToDnsStore(fsm *Fsm, e storage.Dnsresource) error {
 	switch e.RequestType {
 	case "store":
 		err := fsm.DnsRepo.Create(e.Hostname, e.Ip, e.ResourceRecord)

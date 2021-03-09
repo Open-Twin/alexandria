@@ -2,6 +2,7 @@ package dns_test
 
 import (
 	"fmt"
+	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/raft"
 	"github.com/Open-Twin/alexandria/raft/config"
 	"gopkg.in/mgo.v2/bson"
@@ -34,7 +35,7 @@ func TestMain(m *testing.M) {
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
-	s := raft.HttpServer{
+	s := communication.HttpServer{
 		Node: node,
 		Address: httpaddr,
 		Logger: logger,
@@ -43,7 +44,7 @@ func TestMain(m *testing.M) {
 
 	//dns entrypoint
 	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	dnsEntrypoint := &raft.DnsEntrypoint{
+	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node: node,
 		Address: conf.HTTPAddress,
 		Logger: &dnsEntrypointLogger,
@@ -52,7 +53,7 @@ func TestMain(m *testing.M) {
 
 	//dns api
 	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	dnsApi := &raft.API{
+	dnsApi := &communication.API{
 		Node: node,
 		//TODO: address and type from config
 		Address: conf.HTTPAddress,
@@ -104,10 +105,7 @@ func TestStoreEntry(t *testing.T) {
 	ans := SendBsonMessage("127.0.0.1:10000",msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
-	t.Logf("SGUMA %s", answerVals.Domain)
 	if answerVals.Error != "ok" {
-		t.Logf("SEIN %s", answerVals.Error)
-		t.Logf("BRETTVASCO %s", answerVals.Value)
 		t.Errorf("Store failed: %s", ans)
 	}
 }

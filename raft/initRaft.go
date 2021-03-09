@@ -10,19 +10,12 @@ import (
 	"time"
 )
 
-func Main(){
-	//read config
-	rawConfig := config.ReadRawConfig()
-	//validate config
-	conf, err := rawConfig.ValidateConfig()
+func StartRaft(conf *config.Config) (*Node,error){
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", err)
-		os.Exit(1)
-	}
 	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
 	raftNode, err2 := NewNode(conf, raftLogger)
 	if err2 != nil {
+		//TODO error
 		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err2)
 		os.Exit(1)
 	}
@@ -66,35 +59,5 @@ func Main(){
 			}
 		}()
 	}
-
-	//TODO: race conditions locks???
-	//dns entrypoint
-	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	dnsEntrypoint := &DnsEntrypoint{
-		Node: raftNode,
-		Address: conf.HTTPAddress,
-		Logger: &dnsEntrypointLogger,
-	}
-	dnsEntrypoint.StartDnsEntrypoint()
-
-	//dns api
-	apiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	api := &API{
-		Node: raftNode,
-		//TODO: address and type from config
-		Address: conf.HTTPAddress,
-		NetworkType: "udp",
-		Logger: &apiLogger,
-	}
-	api.Start()
-
-	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
-	service := &HttpServer{
-		Node:    raftNode,
-		Address: conf.HTTPAddress,
-		Logger:  &httpLogger,
-	}
-	//starts the http service (not in a goroutine so it blocks from exiting)
-	service.Start()
+	return raftNode, nil
 }
-

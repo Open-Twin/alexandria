@@ -3,6 +3,7 @@ package raft_test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/raft"
 	"github.com/Open-Twin/alexandria/raft/config"
 	"log"
@@ -14,7 +15,7 @@ import (
 	"time"
 )
 
-var s raft.HttpServer
+var s communication.HttpServer
 
 /*
 Entrypoint for the tests
@@ -41,7 +42,7 @@ func TestMain(m *testing.M) {
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
-	s = raft.HttpServer{
+	s = communication.HttpServer{
 		Node: node,
 		Address: httpaddr,
 		Logger: logger,
