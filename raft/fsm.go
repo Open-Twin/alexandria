@@ -71,7 +71,7 @@ func applyToMetadataStore(fsm *Fsm, e storage.Metadata) error{
 		}
 		return nil
 	default:
-		log.Printf("Unrecognized event type in Raft log entry: %s.", e.Type)
+		log.Printf("Unrecognized metadata event type in Raft log entry: %s.", e.Type)
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func applyToDnsStore(fsm *Fsm, e storage.Dnsresource) error {
 		}
 		return nil
 	default:
-		log.Printf("Unrecognized event type in Raft log entry: %s.", e.RequestType)
+		log.Printf("Unrecognized dns event type in Raft log entry: %s.", e.RequestType)
 	}
 	return nil
 }

@@ -57,11 +57,11 @@ func (api *API) Start() {
 
 func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
 	request := struct {
-		Service string `bson:"Service"`
-		Ip string `bson:"Ip"`
-		Type string `bson:"Type"`
-		Key string `bson:"Key"`
-		Value string `bson:"Value"`
+		Service string `bson:"service"`
+		Ip string `bson:"ip"`
+		Type string `bson:"type"`
+		Key string `bson:"key"`
+		Value string `bson:"value"`
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {
@@ -101,9 +101,9 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 
 func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
 	request := struct {
-		Hostname string `bson:"Hostname"`
-		Ip string `bson:"Ip"`
-		RequestType string `bson:"RequestType"`
+		Hostname string `bson:"hostname"`
+		Ip string `bson:"ip"`
+		RequestType string `bson:"requestType"`
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {

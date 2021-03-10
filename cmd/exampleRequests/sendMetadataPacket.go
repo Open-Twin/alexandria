@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	address := "127.0.0.1:10000"
+	address := "127.0.0.1:20000"
 	/*msg := bson.M{
 		"Labels":             []string{"at", "ac", "dejan"},
 		"Type":               uint16(60),
@@ -20,14 +20,14 @@ func main() {
 		"RequestType":		  "store",
 	}*/
 	msg := bson.M{
-		"Hostname": os.Args[1],
-		"Ip" : os.Args[2],
-		"RequestType" : "store",
+		"service": "toilet",
+		"type": os.Args[1],
+		"key": "temp",
+		"value": os.Args[2],
 	}
 
 	sendBsonMessage(address, msg)
 }
-
 func sendBsonMessage(address string, msg bson.M) {
 	conn, err := net.Dial("udp", address)
 	defer conn.Close()
@@ -42,8 +42,8 @@ func sendBsonMessage(address string, msg bson.M) {
 	answer := make([]byte, 2048)
 	_, err = bufio.NewReader(conn).Read(answer)
 	if err != nil {
-		fmt.Printf("Answer:\n%s\n", answer)
-	} else {
 		fmt.Printf("Error on receiving answer: %v", err)
+	} else {
+		fmt.Printf("Answer:\n%s\n", answer)
 	}
 }
