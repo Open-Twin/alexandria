@@ -47,6 +47,13 @@ func main() {
 	}
 	api.Start()
 
+	healthchecks := loadbalancing.HealthCheck{
+		Node:      raftNode,
+		Interval:  5000,
+		CheckType: loadbalancing.PingCheck,
+	}
+	healthchecks.ScheduleHealthChecks()
+
 	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{
 		Node:    raftNode,
@@ -55,11 +62,4 @@ func main() {
 	}
 	//starts the http service (not in a goroutine so it blocks from exiting)
 	service.Start()
-
-	healthchecks := loadbalancing.HealthCheck{
-		Node:      raftNode,
-		Interval:  5000,
-		CheckType: loadbalancing.PingCheck,
-	}
-	healthchecks.ScheduleHealthChecks()
 }
