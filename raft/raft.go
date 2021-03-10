@@ -1,8 +1,8 @@
 package raft
 
 import (
-	"github.com/Open-Twin/alexandria/dns/metadata"
 	"github.com/Open-Twin/alexandria/raft/config"
+	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	bolt "github.com/hashicorp/raft-boltdb"
 	"log"
@@ -14,24 +14,26 @@ import (
 
 
 
-type node struct {
+type Node struct {
 	config   *config.Config
-	raftNode *raft.Raft
-	fsm      *fsm
+	RaftNode *raft.Raft
+	Fsm      *Fsm
 	logger   *log.Logger
 }
-/*
-creates and returns a new Node
- */
-func NewNode(config *config.Config, logger *log.Logger) (*node, error){
 
+/*
+creates and returns a new node
+*/
+func NewNode(config *config.Config, logger *log.Logger) (*Node, error){
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
 	//raftConfig.Logger = log.New(Logger, "", 0)
 
-	repo := metadata.NewInMemoryStorageRepository()
-	fsm := &fsm{
-		repo,
+	metarepo := storage.NewInMemoryStorageRepository()
+	dnsrepo := storage.NewInMemoryDNSStorageRepository()
+	fsm := &Fsm{
+		MetadataRepo: metarepo,
+		DnsRepo: dnsrepo,
 	}
 
 	logStore, err := bolt.NewBoltStore(filepath.Join(config.DataDir,"logStore"))
@@ -67,11 +69,11 @@ func NewNode(config *config.Config, logger *log.Logger) (*node, error){
 		raftNode.BootstrapCluster(configuration)
 		logger.Print("bootstrapping cluster")
 	}
-	return &node{
+	return &Node{
 		config:   config,
-		raftNode: raftNode,
-		logger:      logger,
-		fsm:      fsm,
+		RaftNode: raftNode,
+		logger:   logger,
+		Fsm:      fsm,
 	}, nil
 }
 
@@ -79,14 +81,16 @@ func NewNode(config *config.Config, logger *log.Logger) (*node, error){
 Creates a new node but without persistent storage
 only for tests
  */
-func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*node, error){
+func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*Node, error){
 
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
 	//raftConfig.Logger = log.New(Logger, "", 0)
-	repo := metadata.NewInMemoryStorageRepository()
-	fsm := &fsm{
-		repo,
+	metarepo := storage.NewInMemoryStorageRepository()
+	dnsrepo := storage.NewInMemoryDNSStorageRepository()
+	fsm := &Fsm{
+		MetadataRepo: metarepo,
+		DnsRepo: dnsrepo,
 	}
 
 	logStore := raft.NewInmemStore()
@@ -113,11 +117,11 @@ func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*node, e
 		raftNode.BootstrapCluster(configuration)
 		logger.Print("bootstrapping cluster")
 	}
-	return &node{
+	return &Node{
 		config:   config,
-		raftNode: raftNode,
-		logger:      logger,
-		fsm:      fsm,
+		RaftNode: raftNode,
+		logger:   logger,
+		Fsm:      fsm,
 	}, nil
 }
 /*

@@ -10,24 +10,17 @@ import (
 	"time"
 )
 
-func Main(){
-	//read config
-	rawConfig := config.ReadRawConfig()
-	//validate config
-	conf, err := rawConfig.ValidateConfig()
+func StartRaft(conf *config.Config) (*Node,error){
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", err)
-		os.Exit(1)
-	}
 	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
 	raftNode, err2 := NewNode(conf, raftLogger)
 	if err2 != nil {
-		fmt.Fprintf(os.Stderr, "Error configuring Node: %s", err2)
+		//TODO error
+		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err2)
 		os.Exit(1)
 	}
 
-	//attempts to join a Node if join Address is given
+	//attempts to join a node if join Address is given
 	if conf.JoinAddress != "" {
 		go func() {
 			retryJoin := func() error {
@@ -66,14 +59,5 @@ func Main(){
 			}
 		}()
 	}
-
-	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
-	service := &HttpServer{
-		Node:    raftNode,
-		Address: conf.HTTPAddress,
-		Logger:  &httpLogger,
-	}
-	//starts the http service
-	service.Start()
+	return raftNode, nil
 }
-

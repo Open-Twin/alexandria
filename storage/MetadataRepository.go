@@ -1,4 +1,4 @@
-package metadata
+package storage
 
 /*
 	This class is also seen as the "Repository" it contains the basic CRUD (= Create, Read, Update, Delete) functionalities
@@ -20,21 +20,15 @@ type MetadataRepository interface {
 	Delete(service, ip, key string) error
 }
 
-// Predefined variables for the usage in this class
-type service = string
-type ip = string
-type key = string
-type value = string
-
 // Creating a structure for the Metadata containing the necessary variables
 type InMemoryStorageRepository struct {
 	// Global Metadata variable for this class
 	Metadata map[service]map[ip]map[key]value
 	// Creating a mutex onto the Metadata variable in order to handle threads
 	metadataMu sync.RWMutex
-
 }
-func NewInMemoryStorageRepository() *InMemoryStorageRepository{
+
+func NewInMemoryStorageRepository() *InMemoryStorageRepository {
 	 metadata := make(map[service]map[ip]map[key]value)
 	 return &InMemoryStorageRepository{
 	 	Metadata: metadata,
@@ -42,20 +36,16 @@ func NewInMemoryStorageRepository() *InMemoryStorageRepository{
 }
 // Adding the exists function, which basically just checks if an entry for this specific service exists
 func (imsp *InMemoryStorageRepository) Exists(service, ip, key string) bool {
-	if imsp.Metadata[service][ip][key] != "" {
-		return true
-	}
-
-	return false
+	imsp.metadataMu.RLock()
+	defer imsp.metadataMu.RUnlock()
+	_, ok := imsp.Metadata[service][ip][key]
+	return ok
 }
 
 // Adding the create function, which basically just adds a new entry to the map
 func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) error {
 	imsp.metadataMu.Lock()
 	defer imsp.metadataMu.Unlock()
-
-
-
 	if imsp.Exists(service, ip, key) {
 		imsp.Metadata[service][ip][key] = value
 	} else {
@@ -74,6 +64,9 @@ func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) er
 func (imsp *InMemoryStorageRepository) Read(service, ip, key string) (string, error) {
 	imsp.metadataMu.RLock()
 	defer imsp.metadataMu.RUnlock()
+
+	// TODO: Loadbalancer
+
 	if !imsp.Exists(service, ip, key) {
 		return imsp.Metadata[service][ip][key], errors.New("no entry: as it looks like for this specific service no entry was made")
 	}

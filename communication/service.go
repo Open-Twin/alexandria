@@ -1,8 +1,10 @@
-package raft
+package communication
 
 import (
 	"encoding/json"
 	"fmt"
+	raft2 "github.com/Open-Twin/alexandria/raft"
+	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	"io/ioutil"
 	"log"
@@ -13,7 +15,7 @@ import (
 )
 
 type HttpServer struct {
-	Node    *node
+	Node    *raft2.Node
 	Address net.Addr
 	Logger  *log.Logger
 }
@@ -82,7 +84,7 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	event := &event{
+	event := storage.Metadata{
 		Service: request.Service,
 		Ip: request.Ip,
 		Type:  request.Type,
@@ -96,7 +98,7 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 		server.Logger.Println("")
 	}
 	//Apply to Raft cluster
-	applyFuture := server.Node.raftNode.Apply(eventBytes, 5*time.Second)
+	applyFuture := server.Node.RaftNode.Apply(eventBytes, 5*time.Second)
 	if err := applyFuture.Error(); err != nil {
 		server.Logger.Println("could not apply to raft cluster: "+err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -106,9 +108,9 @@ func (server *HttpServer) handleKeyPost(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 
 	if err != nil{
-		sendResponse(request.Service,request.Key,"error","something went wrong. please check your input.",w)
+		sendHttpResponse(request.Service,request.Key,"error","something went wrong. please check your input.",w)
 	}else {
-		sendResponse(request.Service,request.Key,"ok","null",w)
+		sendHttpResponse(request.Service,request.Key,"ok","null",w)
 	}
 }
 
@@ -135,19 +137,19 @@ func (server *HttpServer) handleKeyGet(w http.ResponseWriter, r *http.Request) {
 
 	log.Print("DEJAN3: "+request.Service+" "+request.Ip+" "+request.Type+" "+request.Key)
 
-	respValue, err := server.Node.fsm.Repo.Read(request.Service,request.Ip,request.Key)
+	respValue, err := server.Node.Fsm.MetadataRepo.Read(request.Service,request.Ip,request.Key)
 
 	if err != nil{
-		sendResponse(request.Service,request.Key,"error",err.Error(),w)
+		sendHttpResponse(request.Service,request.Key,"error",err.Error(),w)
 
 	}else {
-		sendResponse(request.Service,request.Key,"data",respValue,w)
+		sendHttpResponse(request.Service,request.Key,"data",respValue,w)
 	}
 }
 
 /*
-handles a /join request and attempts to join the node
- */
+handles a /join request and attempts to join the Node
+*/
 func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 	peerAddress := r.Header.Get("Peer-Address")
 	if peerAddress == "" {
@@ -155,7 +157,7 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	addPeerFuture := server.Node.raftNode.AddVoter(
+	addPeerFuture := server.Node.RaftNode.AddVoter(
 		raft.ServerID(peerAddress), raft.ServerAddress(peerAddress), 0, 0)
 	if err := addPeerFuture.Error(); err != nil {
 		server.Logger.Printf("\"Error joining peer to Raft\" %v\n", peerAddress)
@@ -167,7 +169,7 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func sendResponse(service, key, etype, value string, w http.ResponseWriter){
+func sendHttpResponse(service, key, etype, value string, w http.ResponseWriter){
 
 	valueMap := map[string]string{
 		"Type": etype,
@@ -193,3 +195,5 @@ func sendResponse(service, key, etype, value string, w http.ResponseWriter){
 
 	w.Write(responseBytes)
 }
+
+
