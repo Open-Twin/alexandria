@@ -35,7 +35,7 @@ func (api *API) Start() {
 	}
 
 	log.Println("Starting DNS")
-	go meta_udpserver.StartUDP(func(addr net.Addr, buf []byte) []byte {
+	go meta_udpserver.Start(func(addr net.Addr, buf []byte) []byte {
 		resp := handleMetadata(addr, buf, api.Node, api.Logger)
 		return resp
 	})
@@ -49,8 +49,8 @@ func (api *API) Start() {
 	}
 
 	log.Println("Starting DNS")
-	go dns_udpserver.StartUDP(func(addr net.Addr, buf []byte) []byte {
-		resp := handleDnsdata(addr, buf, api.Node, api.Logger)
+	go dns_udpserver.Start(func(addr net.Addr, buf []byte) []byte {
+		resp := handleDnsData(addr, buf, api.Node, api.Logger)
 		return resp
 	})
 }
@@ -99,33 +99,7 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 	return resp
 }
 
-func createMetadataResponse(service, key, etype, value string) []byte{
-
-	valueMap := map[string]string{
-		"Type": etype,
-		"Value": value,
-	}
-	response := struct {
-		Service string
-		Type string
-		Key string
-		Value map[string]string
-	}{
-		Service: service,
-		Type: "response",
-		Key: key,
-		Value: valueMap,
-	}
-
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		log.Print("sendresponse failed")
-	}
-
-	return responseBytes
-}
-
-func handleDnsdata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
+func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
 	request := struct {
 		Hostname string `bson:"Hostname"`
 		Ip string `bson:"Ip"`
@@ -220,22 +194,3 @@ func generateResourceRecord(hostname, ip string) (dns.DNSResourceRecord, error) 
 	return rrecord, nil
 }
 
-func createResponse(domain, etype, value string) []byte{
-
-	response := struct {
-		Domain string
-		Error string
-		Value string
-	}{
-		Domain: domain,
-		Error: etype,
-		Value: value,
-	}
-
-	responseBytes, err := bson.Marshal(response)
-	if err != nil {
-		log.Print("sendresponse failed")
-	}
-
-	return responseBytes
-}

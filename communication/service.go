@@ -169,31 +169,4 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func sendHttpResponse(service, key, etype, value string, w http.ResponseWriter){
-
-	valueMap := map[string]string{
-		"Type": etype,
-		"Value": value,
-	}
-	response := struct {
-		Service string
-		Type string
-		Key string
-		Value map[string]string
-	}{
-		Service: service,
-		Type: "response",
-		Key: key,
-		Value: valueMap,
-	}
-
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		//server.Logger.Println("")
-		log.Print("sendresponse failed")
-	}
-
-	w.Write(responseBytes)
-}
-
 

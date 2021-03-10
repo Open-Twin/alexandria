@@ -10,7 +10,7 @@ type TCPServer struct {
 }
 type TCPHandler func(addr net.Addr, buf []byte) []byte
 
-func (s TCPServer) StartTCP(handler TCPHandler) {
+func (s TCPServer) Start(handler TCPHandler) {
 	addr := net.TCPAddr{
 		IP: s.Address,
 		Port: s.Port,

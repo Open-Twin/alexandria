@@ -1,23 +1,19 @@
 package raft
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Open-Twin/alexandria/raft/config"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 )
 
-func StartRaft(conf *config.Config) (*Node,error){
-
-	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
-	raftNode, err2 := NewNode(conf, raftLogger)
-	if err2 != nil {
-		//TODO error
-		fmt.Fprintf(os.Stderr, "Error configuring node: %s", err2)
-		os.Exit(1)
+func Start(conf *config.Config, raftLogger *log.Logger) (*Node,error){
+	raftNode, err := NewNode(conf, raftLogger)
+	if err != nil {
+		return nil, errors.New("Error configuring node: "+err.Error())
 	}
 
 	//attempts to join a node if join Address is given

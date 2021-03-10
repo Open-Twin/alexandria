@@ -10,7 +10,6 @@ import (
 )
 
 func main(){
-
 	//init raft
 	//read config
 	rawConfig := config.ReadRawConfig()
@@ -20,9 +19,10 @@ func main(){
 		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", confErr)
 		os.Exit(1)
 	}
-	raftNode, err := raft.StartRaft(conf)
+	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
+	raftNode, err := raft.Start(conf, raftLogger)
 	if err != nil{
-
+		os.Exit(1)
 	}
 
 	//TODO: race conditions locks???

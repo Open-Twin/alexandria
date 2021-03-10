@@ -15,7 +15,7 @@ type UDPHandler func(addr net.Addr, buf []byte) []byte
 /**
 Starts the UDP endpoint
  */
-func (s UDPServer) StartUDP(handler UDPHandler) {
+func (s UDPServer) Start(handler UDPHandler) {
 	addr := net.UDPAddr{
 		IP: s.Address,
 		Port: s.Port,

@@ -24,11 +24,11 @@ func (api *DnsEntrypoint) StartDnsEntrypoint(){
 	}
 
 	log.Println("Starting DNS entrypoint")
-	go udpserver.StartUDP(func(addr net.Addr, buf []byte) []byte {
+	go udpserver.Start(func(addr net.Addr, buf []byte) []byte {
 		answer := handle(addr,buf, api)
 		return answer
 	})
-	go tcpserver.StartTCP(func(addr net.Addr, buf []byte) []byte {
+	go tcpserver.Start(func(addr net.Addr, buf []byte) []byte {
 		answer := handle(addr,buf, api)
 		return answer
 	})

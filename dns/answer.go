@@ -26,7 +26,7 @@ func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, logger *
 }
 
 func ExtractQuestionHostnames(pdu DNSPDU) []string {
-	hostnames := []string{}
+	hostnames := make([]string, 0)
 
 	for _, question := range pdu.Questions {
 		pdu.Header.TotalAnswerResourceRecords += 1
