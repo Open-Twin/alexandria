@@ -55,6 +55,7 @@ func (api *API) Start() {
 	})
 }
 
+
 func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
 	request := struct {
 		Service string `bson:"service"`
@@ -68,6 +69,16 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 		logger.Println("Bad request: "+err.Error())
 		return createResponse("","error","something went wrong. please check your input.")
 	}
+	//handle get request
+	if request.Type == "get" {
+		data, err := node.Fsm.MetadataRepo.Read(request.Service,request.Ip,request.Key)
+		if err != nil {
+			//return error
+			return createMetadataResponse(request.Service,request.Key,"error",err.Error())
+		}
+		return createMetadataResponse(request.Service,request.Key,"data",data)
+	}
+	//handle other requests
 
 	//marshal record
 	event := storage.Metadata{
