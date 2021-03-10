@@ -14,7 +14,7 @@ type UDPServer struct {
 type UDPHandler func(addr net.Addr, buf []byte) []byte
 /**
 Starts the UDP endpoint
- */
+*/
 func (s UDPServer) Start(handler UDPHandler) {
 	addr := net.UDPAddr{
 		IP: s.Address,
@@ -28,15 +28,15 @@ func (s UDPServer) Start(handler UDPHandler) {
 
 	quit := make(chan struct{})
 	//for i := 0; i < runtime.NumCPU(); i++ {
-		//starts a new thread that reads from the connection
-		go listen(conn, handler, quit)
+	//starts a new thread that reads from the connection
+	go listen(conn, handler, quit)
 	//}
 	<-quit // hang until an error
 }
 /**
 reads from the udp connection
 https://stackoverflow.com/questions/28400340/how-support-concurrent-connections-with-a-udp-server-using-go
- */
+*/
 func listen(connection *net.UDPConn, handler UDPHandler, quit chan struct{}) {
 	buffer := make([]byte, 1024)
 	n, remoteAddr, err := 0, new(net.UDPAddr), error(nil)
@@ -56,7 +56,7 @@ func listen(connection *net.UDPConn, handler UDPHandler, quit chan struct{}) {
 }
 /**
 Handles the data from the udp connection
- */
+*/
 func handleData(n int, buffer []byte, handler UDPHandler, addr* net.UDPAddr, conn *net.UDPConn){
 	//defer conn.Close()
 	log.Printf("\n--------------\n")

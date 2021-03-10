@@ -1,0 +1,2 @@
+// GET https://localhost:8080/cpuload
+GET http://localhost:8080/cpuload

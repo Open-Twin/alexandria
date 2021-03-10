@@ -63,7 +63,6 @@ func handleTCPData(n int, buffer []byte, addr net.Addr, handler TCPHandler) []by
 Checks if errors are thrown. If yes, it prints the error and exits the program
 */
 /*func checkError(err error) {
-
 	if err != nil {
 		log.Fatal(os.Stderr, "Fatal error: %s", err.Error())
 		//Exits the program
