@@ -3,8 +3,8 @@ package storage
 import (
 	"errors"
 	"github.com/Open-Twin/alexandria/dns"
-	"github.com/Open-Twin/alexandria/loadbalancing"
 	"sync"
+	"time"
 )
 
 /*
@@ -26,12 +26,12 @@ type StorageRepository struct {
 	Entries map[hostname]map[ip]record
 	// Creating a mutex onto the Metadata variable in order to handle threads
 	mutex  sync.RWMutex
-	LbInfo map[ip]loadbalancing.NodeHealth
+	LbInfo map[ip]dns.NodeHealth
 }
 
 func NewInMemoryDNSStorageRepository() *StorageRepository {
 	entries := make(map[hostname]map[ip]record)
-	info := make(map[ip]loadbalancing.NodeHealth)
+	info := make(map[ip]dns.NodeHealth)
 	return &StorageRepository{
 		Entries: entries,
 		LbInfo:  info,
@@ -61,7 +61,7 @@ func (imsp *StorageRepository) Create(hostname, ip string, record dns.DNSResourc
 	}
 	imsp.mutex.Lock()
 	imsp.Entries[hostname][ip] = record
-	imsp.LbInfo[hostname] = loadbalancing.NodeHealth{
+	imsp.LbInfo[hostname] = dns.NodeHealth{
 		Healthy:     false,
 		Connections: 0,
 	}
@@ -77,7 +77,7 @@ func (imsp *StorageRepository) Read(hostname string) (dns.DNSResourceRecord, err
 	imsp.mutex.RLock()
 	defer imsp.mutex.RUnlock()
 
-	ip := loadbalancing.FindBestNode(hostname, imsp)
+	ip := findBestNode(hostname, imsp)
 
 	return imsp.Entries[hostname][ip], nil
 }
@@ -87,7 +87,7 @@ func (imsp *StorageRepository) Update(hostname, ip string, value dns.DNSResource
 	imsp.mutex.Lock()
 	defer imsp.mutex.Unlock()
 	imsp.Entries[hostname][ip] = value
-	imsp.LbInfo[ip] = loadbalancing.NodeHealth{
+	imsp.LbInfo[ip] = dns.NodeHealth{
 		Healthy:     false,
 		Connections: 0,
 	}
@@ -105,4 +105,30 @@ func (imsp *StorageRepository) Delete(hostname, ip string) error {
 		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong, to delete the entry")
 	}
 	return nil
+}
+
+func findBestNode(hostname string, imsp *StorageRepository) string {
+	lowestConnections := 99999
+	var lowestIp string
+	for ip := range imsp.Entries[hostname] {
+		if imsp.LbInfo[ip].Connections < lowestConnections {
+			lowestConnections = imsp.LbInfo[ip].Connections
+			lowestIp = ip
+		}
+	}
+
+	nodeHealth := imsp.LbInfo[lowestIp]
+	nodeHealth.Connections += 1
+	imsp.LbInfo[lowestIp] = nodeHealth
+
+	go func() {
+		time.Sleep(time.Duration(imsp.Entries[hostname][lowestIp].TimeToLive) * time.Second)
+		if imsp.Exists(hostname, lowestIp) {
+			nodeHealth := imsp.LbInfo[lowestIp]
+			nodeHealth.Connections -= 1
+			imsp.LbInfo[lowestIp] = nodeHealth
+		}
+	}()
+
+	return lowestIp
 }

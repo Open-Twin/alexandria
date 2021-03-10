@@ -2,8 +2,8 @@ package loadbalancing
 
 import (
 	"fmt"
+	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/raft"
-	"github.com/Open-Twin/alexandria/storage"
 	"github.com/go-ping/ping"
 	"io/ioutil"
 	"net/http"
@@ -17,7 +17,7 @@ type NodeHealth struct {
 }
 
 type HealthCheck struct {
-	Node      raft.Node
+	Node      *raft.Node
 	Interval  int
 	CheckType CheckType
 }
@@ -49,7 +49,7 @@ func (hc *HealthCheck) loopNodes() {
 	}
 }
 
-func sendHttpCheck(ip string, node *NodeHealth) {
+func sendHttpCheck(ip string, node *dns.NodeHealth) {
 	resp, err := http.Get("http://" + ip + ":8080/health")
 	if err != nil {
 		node.Healthy = false
@@ -66,7 +66,7 @@ func sendHttpCheck(ip string, node *NodeHealth) {
 	}
 }
 
-func sendPingCheck(ip string, node *NodeHealth) {
+func sendPingCheck(ip string, node *dns.NodeHealth) {
 	pinger, err := ping.NewPinger(ip)
 	if err != nil {
 		fmt.Printf("Error on creating pinger: %s\n", err.Error())
@@ -91,30 +91,4 @@ func sendPingCheck(ip string, node *NodeHealth) {
 		fmt.Printf("Node %s could not be reached. Statistics: %+v\n", ip, stats)
 		node.Healthy = false
 	}
-}
-
-func FindBestNode(hostname string, imsp *storage.StorageRepository) string {
-	lowestConnections := 99999
-	var lowestIp string
-	for ip := range imsp.Entries[hostname] {
-		if imsp.LbInfo[ip].Connections < lowestConnections {
-			lowestConnections = imsp.LbInfo[ip].Connections
-			lowestIp = ip
-		}
-	}
-
-	nodeHealth := imsp.LbInfo[lowestIp]
-	nodeHealth.Connections += 1
-	imsp.LbInfo[lowestIp] = nodeHealth
-
-	go func() {
-		time.Sleep(time.Duration(imsp.Entries[hostname][lowestIp].TimeToLive) * time.Second)
-		if imsp.Exists(hostname, lowestIp) {
-			nodeHealth := imsp.LbInfo[lowestIp]
-			nodeHealth.Connections -= 1
-			imsp.LbInfo[lowestIp] = nodeHealth
-		}
-	}()
-
-	return lowestIp
 }
