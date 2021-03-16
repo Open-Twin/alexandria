@@ -1,121 +1,238 @@
 package cfg
 
 import (
-	"fmt"
+	"github.com/go-playground/validator/v10"
 	"log"
+	"net"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
-	"strings"
 )
 
-// This constant saves the names of the environment variables
-const (
-	HOSTNAME      = "HOSTNAME"
-	UDP_PORT      = "UDP_PORT"
-	TCP_PORT      = "TCP_PORT"
-	LOG_LEVEL     = "LOG_LEVEL"
-	HTTP_ADDR     = "HTTP_ADDR"
-	RAFT_ADDR     = "RAFT_ADDR"
-	HTTP_PORT     = "HTTP_PORT"
-	RAFT_PORT     = "RAFT_PORT"
-	JOIN_PORT     = "JOIN_PORT"
-	RAFT_DATA_DIR = "RAFT_DATA_DIR"
-	BOOTSTRAP     = "BOOTSTRAP"
+type rawConfig struct {
+	Hostname    string `validate:"required,hostname"`
+	LogLevel    int `validate:"required,max=5,min=1"`
+	DataDir     string `validate:"required,dir"`
+	Bootstrap   bool
+	Autojoin	bool
+	HealthcheckInterval int `validate:"required,min=1000"`
+	HttpAddr    string `validate:"required,ipv4"`
+	RaftAddr    string `validate:"required,ipv4"`
+	JoinAddr	string `validate:"required,ipv4"`
+	HttpPort    int `validate:"required,max=65536,min=1" default:"5"`
+	RaftPort    int `validate:"required,max=65536,min=1"`
+}
 
-	ERROR_MSG = "Config: The variable %s is not set."
-)
-
-// Struct that saves all the configured values
 type Config struct {
 	Hostname    string
-	UdpPort     int
-	TcpPort     int
 	LogLevel    int
-	HttpAddr    string
-	RaftAddr    string
-	HttpPort    int
-	RaftPort    int
-	JoinPort    int
-	RaftDataDir string
+	DataDir     string
 	Bootstrap   bool
+	Autojoin	bool
+	HealthcheckInterval int
+	HttpAddr    net.Addr
+	RaftAddr    net.Addr
+	JoinAddr	net.Addr
 }
 
 // Reads the configuration from the environment variables.
 // Returns a struct with the fetched values
 func ReadConf() Config {
-	fmt.Println("Reading config started")
+	// This constant saves the names of the environment variables
+	const (
+		HOSTNAME      = "HOSTNAME"
+		LOG_LEVEL     = "LOG_LEVEL"
+		DATA_DIR      = "DATA_DIR"
+		BOOTSTRAP     = "BOOTSTRAP"
+		AUTO_JOIN     = "AUTO_JOIN"
+		HEALTHCHECK_INTERVAL = "HEALTHCHECK_INTERVAL"
+		HTTP_ADDR     = "HTTP_ADDR"
+		RAFT_ADDR     = "RAFT_ADDR"
+		JOIN_ADDR     = "JOIN_ADDR"
+		HTTP_PORT     = "HTTP_PORT"
+		RAFT_PORT     = "RAFT_PORT"
+	)
 
-	cfg := Config{}
+	cfg := rawConfig{}
 
-	hostname := os.Getenv(HOSTNAME)
-	if hostname == "" {
-		log.Printf(ERROR_MSG, HOSTNAME)
+	cfg.Hostname = os.Getenv(HOSTNAME)
+
+	logLevel, errLog := strconv.Atoi(os.Getenv(LOG_LEVEL))
+	if errLog != nil {
+		logLevel = -1
 	}
-	cfg.Hostname = hostname
+	cfg.LogLevel = logLevel
 
-	udp_port, err := strconv.Atoi(os.Getenv(UDP_PORT))
+	cfg.DataDir = os.Getenv(DATA_DIR)
+
+	bootStrap, errBoot := strconv.ParseBool(os.Getenv(BOOTSTRAP))
+	if errBoot != nil {
+		bootStrap = false
+	}
+	cfg.Bootstrap = bootStrap
+
+	autoJoin, errAuto := strconv.ParseBool(os.Getenv(AUTO_JOIN))
+	if errAuto != nil {
+		autoJoin = false
+	}
+	cfg.Autojoin = autoJoin
+
+	healthInterval, errHealth := strconv.Atoi(os.Getenv(HEALTHCHECK_INTERVAL))
+	if errHealth != nil {
+		healthInterval = -1
+	}
+	cfg.HealthcheckInterval = healthInterval
+
+	cfg.HttpAddr = os.Getenv(HTTP_ADDR)
+
+	cfg.RaftAddr = os.Getenv(RAFT_ADDR)
+
+	cfg.JoinAddr = os.Getenv(JOIN_ADDR)
+
+	httpPort, errHttp := strconv.Atoi(os.Getenv(HTTP_PORT))
+	if errHttp != nil {
+		httpPort = -1
+	}
+	cfg.HttpPort = httpPort
+
+	raftPort, errPort := strconv.Atoi(os.Getenv(RAFT_PORT))
+	if errPort != nil {
+		healthInterval = -1
+	}
+	cfg.RaftPort = raftPort
+
+	validatedCfg, errs := validateConfig(cfg)
+	for err := range errs {
+		log.Printf("Error in Config: %v", err)
+	}
+
+	return validatedCfg
+}
+
+func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
+	//Errors array in which all errors get saved
+	errors := make([]validator.FieldError,0)
+	errors = nil
+	//playground validator
+	v := validator.New()
+	err := v.Struct(rawConfig)
+	//check for errors
 	if err != nil {
-		log.Printf(ERROR_MSG, HTTP_PORT)
+		//loop through errors
+		for _, fieldErr := range err.(validator.ValidationErrors) {
+			if fieldErr.Tag() == "dir"{
+				direrr := createDirectory(rawConfig.DataDir)
+				if direrr == nil{
+					continue
+				}
+			}
+			setDefaultValue(fieldErr, &rawConfig)
+
+			errors = append(errors, fieldErr)
+		}
 	}
-	cfg.UdpPort = udp_port
-
-	tcp_port, err := strconv.Atoi(os.Getenv(TCP_PORT))
-	if err != nil {
-		log.Printf(ERROR_MSG, HTTP_PORT)
+	//parse ip Address
+	bindAddr := net.ParseIP(rawConfig.RaftAddr)
+	//create new tcpaddr from bindaddr and raftport
+	raftAddr := &net.TCPAddr{
+		IP: bindAddr,
+		Port: rawConfig.RaftPort,
 	}
-	cfg.TcpPort = tcp_port
-
-	log_level, err := strconv.Atoi(os.Getenv(LOG_LEVEL))
-	if err != nil {
-		log.Printf(ERROR_MSG, HTTP_PORT)
+	//create new tcpaddr from bindAddr and httpport
+	httpAddr := &net.TCPAddr{
+		IP: bindAddr,
+		Port: rawConfig.HttpPort,
 	}
-	cfg.LogLevel = log_level
-
-	http_addr := os.Getenv(HTTP_ADDR)
-	/*if http_addr == "" {
-		log.Printf(ERROR_MSG, HTTP_ADDR)
-	}*/
-	cfg.HttpAddr = http_addr
-
-	raft_addr := os.Getenv(RAFT_ADDR)
-	if raft_addr == "" {
-		log.Printf(ERROR_MSG, RAFT_ADDR)
+	//join address
+	var joinAddr net.Addr
+	joinAddr = nil
+	if rawConfig.JoinAddr != "" {
+		joinAddress := net.ParseIP(rawConfig.JoinAddr)
+		joinAddr = &net.TCPAddr{
+			IP: joinAddress,
+			Port: rawConfig.HttpPort,
+		}
 	}
-	cfg.RaftAddr = raft_addr
-
-	http_port, err := strconv.Atoi(os.Getenv(HTTP_PORT))
-	if err != nil {
-		log.Printf(ERROR_MSG, HTTP_PORT)
-	}
-	cfg.HttpPort = http_port
-
-	raft_port, err := strconv.Atoi(os.Getenv(RAFT_PORT))
-	if err != nil {
-		log.Printf(ERROR_MSG, RAFT_PORT)
-	}
-	cfg.RaftPort = raft_port
-
-	join_port, err := strconv.Atoi(os.Getenv(JOIN_PORT))
-	if err != nil {
-		log.Printf(ERROR_MSG, JOIN_PORT)
-	}
-	cfg.JoinPort = join_port
-
-	raft_data_dir := os.Getenv(RAFT_DATA_DIR)
-	if raft_data_dir == "" {
-		log.Printf(ERROR_MSG, RAFT_DATA_DIR)
-	}
-	cfg.RaftDataDir = raft_data_dir
-
-	bootstrap := os.Getenv(BOOTSTRAP)
-	bootstrap = strings.ToLower(bootstrap)
-	cfg.Bootstrap = false
-	if bootstrap == "true" {
-		cfg.Bootstrap = true
-	} else if bootstrap != "false" {
-		log.Printf(ERROR_MSG, BOOTSTRAP)
+	//create config
+	config := Config{
+		Hostname: rawConfig.Hostname,
+		LogLevel: rawConfig.LogLevel,
+		DataDir: rawConfig.DataDir,
+		Bootstrap: rawConfig.Bootstrap,
+		Autojoin: rawConfig.Autojoin,
+		HealthcheckInterval: rawConfig.HealthcheckInterval,
+		HttpAddr: httpAddr,
+		RaftAddr: raftAddr,
+		JoinAddr: joinAddr,
 	}
 
-	fmt.Println("Reading config finished")
-	return cfg
+	//return config
+	return config, errors
+}
+
+const (
+	Hostname = "ariel"
+	LogLevel = 1
+	DataDir = "alexandria-data"
+	Bootstrap = false
+	AutoJoin = true
+	HealthcheckInterval = 3000
+	HttpAddr = "127.0.0.1"
+	RaftAddr = "127.0.0.1"
+	JoinAddr = ""
+	HttpPort = "8000"
+	RaftPort = "7000"
+)
+
+func setDefaultValue(error validator.FieldError, conf *rawConfig) {
+	log.Printf("Setting field %s threw error: %s\n", error.Field(), error.Error())
+
+	switch error.Field() {
+		case "Hostname":
+			log.Printf("Using default value for %s istead: %s\n", "Hostname", Hostname)
+			conf.Hostname = Hostname
+		case "Loglevel":
+			log.Printf("Using default value for %s istead: %d\n", "Loglevel", LogLevel)
+			conf.LogLevel = LogLevel
+		case "DataDir":
+			_, b, _, _ := runtime.Caller(0)
+			path := filepath.Dir(b)
+			dataDir := path + "/../" + DataDir
+			log.Printf("Using default value for %s istead: %s\n", "DataDir", dataDir)
+			conf.DataDir = dataDir
+			err := createDirectory(conf.DataDir)
+			if err != nil {
+				log.Fatalf("Default directory %s could not created: %s\n", conf.DataDir, err.Error())
+			}
+		case "Bootstrap":
+			log.Printf("Using default value for %s istead: %v\n", "Bootstrap", Bootstrap)
+			conf.Bootstrap = Bootstrap
+		case "Autojoin":
+			log.Printf("Using default value for %s istead: %v\n", "Autojoin", AutoJoin)
+			conf.Autojoin = AutoJoin
+		case "HealthcheckInterval":
+			log.Printf("Using default value for %s istead: %d\n", "HealthcheckInterval", HealthcheckInterval)
+			conf.HealthcheckInterval = HealthcheckInterval
+		case "HttpAddr":
+			log.Printf("Using default value for %s istead: %s\n", "HttpAddr", HttpAddr)
+			conf.HttpAddr = HttpAddr
+		case "RaftAddr":
+			log.Printf("Using default value for %s istead: %s\n", "RaftAddr", RaftAddr)
+			conf.RaftAddr = RaftAddr
+		case "JoinAddr":
+			log.Printf("Using default value for %s istead: %s\n", "JoinAddr", JoinAddr)
+			conf.JoinAddr = JoinAddr
+	}
+}
+
+func createDirectory(dir string) error{
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		log.Printf("Directory %s not found. Creating new directory...\n", dir)
+		err := os.Mkdir(dir,0755)
+		if err != nil{
+			return err
+		}
+	}
+	return nil
 }

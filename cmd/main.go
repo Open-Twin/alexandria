@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/raft"
-	"github.com/Open-Twin/alexandria/raft/config"
 	"log"
 	"os"
 )
@@ -12,15 +11,11 @@ import (
 func main(){
 	//init raft
 	//read config
-	rawConfig := config.ReadRawConfig()
-	//validate config
-	conf, confErr := rawConfig.ValidateConfig()
-	if confErr != nil {
-		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", confErr)
-		os.Exit(1)
-	}
+	conf := cfg.ReadConf()
+	log.Print("Config: ")
+	log.Print(conf)
 	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
-	raftNode, err := raft.Start(conf, raftLogger)
+	raftNode, err := raft.Start(&conf, raftLogger)
 	if err != nil{
 		os.Exit(1)
 	}
@@ -30,7 +25,7 @@ func main(){
 	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node: raftNode,
-		Address: conf.HTTPAddress,
+		Address: conf.HttpAddr,
 		Logger: &dnsEntrypointLogger,
 	}
 	dnsEntrypoint.StartDnsEntrypoint()
@@ -40,7 +35,7 @@ func main(){
 	api := &communication.API{
 		Node: raftNode,
 		//TODO: address and type from config
-		Address: conf.HTTPAddress,
+		Address: conf.HttpAddr,
 		NetworkType: "udp",
 		Logger: &apiLogger,
 	}
@@ -49,7 +44,7 @@ func main(){
 	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
 	service := &communication.HttpServer{
 		Node:    raftNode,
-		Address: conf.HTTPAddress,
+		Address: conf.HttpAddr,
 		Logger:  &httpLogger,
 	}
 	//starts the http service (not in a goroutine so it blocks from exiting)

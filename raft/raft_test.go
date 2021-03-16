@@ -3,9 +3,9 @@ package raft_test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/raft"
-	"github.com/Open-Twin/alexandria/raft/config"
 	"log"
 	"net"
 	"net/http"
@@ -27,21 +27,34 @@ func TestMain(m *testing.M) {
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 7000,
 	}
+
 	httpaddr := &net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 8000,
 	}
-	conf := &config.Config{
-		RaftAddress: raftaddr,
-		HTTPAddress: httpaddr,
-		JoinAddress: "127.0.0.1:8000",
-		DataDir: "./test",
-		Bootstrap: true,
+
+	joinaddr := &net.TCPAddr{
+		IP: net.ParseIP("1.2.3.4"),
+		Port: 8000,
 	}
-	node, err := raft.NewInMemNodeForTesting(conf, logger)
+
+	conf := cfg.Config{
+		Hostname: "adin carik",
+		LogLevel: 1,
+		DataDir: "raft/test",
+		Bootstrap: true,
+		Autojoin: false,
+		HealthcheckInterval: 2000,
+		RaftAddr: raftaddr,
+		HttpAddr: httpaddr,
+		JoinAddr: joinaddr,
+	}
+
+	node, err := raft.NewInMemNodeForTesting(&conf, logger)
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
+
 	s = communication.HttpServer{
 		Node: node,
 		Address: httpaddr,
