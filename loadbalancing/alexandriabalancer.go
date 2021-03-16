@@ -3,113 +3,126 @@ package loadbalancing
 import (
 	"fmt"
 	"github.com/Open-Twin/alexandria/communication"
+	"github.com/Open-Twin/alexandria/dns"
+	"github.com/Open-Twin/alexandria/storage"
+	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
 )
 
 type AlexandriaBalancer struct {
-	dnsport    int
-	dnsservers []string
-	pointer    int
-	lock       sync.RWMutex
+	DnsPort int
+	nodes   map[storage.Ip]dns.NodeHealth
+	pointer int
+	lock    sync.RWMutex
 }
 
-/**
-Starts listening for connections on the specified dns port
-*/
-func StartAlexandriaLoadbalancer(dnsport int) *AlexandriaBalancer {
-	lb := AlexandriaBalancer{dnsport, []string{}, 0, sync.RWMutex{}}
+func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
+	lb.nodes = make(map[storage.Ip]dns.NodeHealth)
+	lb.pointer = 0
+	lb.lock = sync.RWMutex{}
+
+	lb.startSignupEndpoint()
+
+	hc := HealthCheck{
+		Nodes:     &lb.nodes,
+		Interval:  5000,
+		CheckType: HttpCheck,
+	}
+	hc.ScheduleHealthChecks()
 
 	udpServer := communication.UDPServer{
 		Address: []byte{0, 0, 0, 0},
-		Port:    dnsport,
+		Port:    lb.DnsPort,
 	}
 
 	// Listen for connections
-	go udpServer.StartUDP(func(addr net.Addr, msg []byte) []byte {
+	go udpServer.Start(func(addr net.Addr, msg []byte) []byte {
 		// Run the method for every message received
 		go lb.forwardMsg(addr, msg)
 		return []byte("request forwarded")
 	})
-
-	return &lb
 }
 
-/**
-Adds a node to the list of loadbalaced dns nodes
-*/
-func (l *AlexandriaBalancer) AddDns(dnsIp string) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+func (balancer *AlexandriaBalancer) startSignupEndpoint() {
+	http.HandleFunc("", balancer.addAlexandriaNode)
+	err := http.ListenAndServe(":443", nil)
+	if err != nil {
+		log.Fatalf("Signup Endpoint for Loadbalancer could not be started: %s", err.Error())
+	}
+}
 
-	// append new node to list
-	l.dnsservers = append(l.dnsservers, dnsIp)
+func (balancer *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	ip := r.Form["ip"][0]
+
+	balancer.lock.Lock()
+	defer balancer.lock.Unlock()
+	balancer.nodes[ip] = dns.NodeHealth{
+		Healthy:     false,
+		Connections: 0,
+	}
 }
 
 /**
 Removes a node from the loadbalanced dns nodes
- */
-func (l *AlexandriaBalancer) RemoveDns(dnsIp string) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+*/
+/*
+func (balancer *AlexandriaBalancer) removeDns(dnsIp string) {
+	balancer.lock.Lock()
+	defer balancer.lock.Unlock()
 
 	index := -1
 	// search for item in list
-	for i := 0; i < len(l.dnsservers); i++ {
-		if l.dnsservers[i] == dnsIp {
+	for i := 0; i < len(balancer.dnsservers); i++ {
+		if balancer.dnsservers[i] == dnsIp {
 			index = i
-			i = len(l.dnsservers)
+			i = len(balancer.dnsservers)
 		}
 	}
 
 	// If the itmes was found
 	if index != -1 {
 		// append everthing before and after the item
-		l.dnsservers = append(l.dnsservers[:index], l.dnsservers[index+1:]...)
+		balancer.dnsservers = append(balancer.dnsservers[:index], balancer.dnsservers[index+1:]...)
 	}
-}
-
-/**
-Returns all loadbalanced dns entries
- */
-func (l *AlexandriaBalancer) GetDnsEntries() []string {
-	return l.dnsservers
-}
+}*/
 
 /**
 Returns the next address in the list of loadbalanced nodes
- */
-func (l *AlexandriaBalancer) nextAddr() string {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+*/
+func (balancer *AlexandriaBalancer) nextAddr() string {
+	balancer.lock.Lock()
+	defer balancer.lock.Unlock()
 
 	// implementation of the loadbalancing algorithm (round robin)
 	// move the pointer one ahead
-	l.pointer++
+	balancer.pointer++
 	// if the pointer is larger than the number of nodes it has to be reset
-	if l.pointer >= len(l.dnsservers) {
-		l.pointer = 0
+	if balancer.pointer >= len(balancer.nodes) {
+		balancer.pointer = 0
 	}
 
-	address := l.dnsservers[l.pointer]
+	address := balancer.dnsservers[balancer.pointer]
 	return address
 }
 
 /**
 Forwards an incoming message to a dns node
- */
-func (l *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
+*/
+func (balancer *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
 	fmt.Println("Message received: " + string(msg))
 
-	if len(l.dnsservers) == 0 {
+	if len(balancer.dnsservers) == 0 {
 		fmt.Println("No dns nodes to forward to.")
 		return
 	}
 
-	adrentik := l.nextAddr()
+	adrentik := balancer.nextAddr()
 
-	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik+":"+strconv.Itoa(l.dnsport))
+	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik+":"+strconv.Itoa(balancer.dnsport))
 	if err != nil {
 		fmt.Printf("Error on resolving dns address : %s\n", err)
 	}
@@ -129,5 +142,5 @@ func (l *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
 		fmt.Printf("Error on sending message to dns: %s\n", err)
 	}
 
-	fmt.Printf("Message forwareded to: %s:%d\n", adrentik, l.dnsport)
+	fmt.Printf("Message forwareded to: %s:%d\n", adrentik, balancer.dnsport)
 }

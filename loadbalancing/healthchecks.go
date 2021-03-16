@@ -3,7 +3,7 @@ package loadbalancing
 import (
 	"fmt"
 	"github.com/Open-Twin/alexandria/dns"
-	"github.com/Open-Twin/alexandria/raft"
+	"github.com/Open-Twin/alexandria/storage"
 	"github.com/go-ping/ping"
 	"io/ioutil"
 	"net/http"
@@ -17,7 +17,7 @@ type NodeHealth struct {
 }
 
 type HealthCheck struct {
-	Node      *raft.Node
+	Nodes     *map[storage.Ip]dns.NodeHealth
 	Interval  int
 	CheckType CheckType
 }
@@ -39,8 +39,8 @@ func (hc *HealthCheck) ScheduleHealthChecks() {
 }
 
 func (hc *HealthCheck) loopNodes() {
-	for ip := range hc.Node.Fsm.DnsRepo.LbInfo {
-		node := hc.Node.Fsm.DnsRepo.LbInfo[ip]
+	for ip := range *hc.Nodes {
+		node := (*hc.Nodes)[ip]
 		if hc.CheckType == HttpCheck {
 			sendHttpCheck(ip, &node)
 		} else if hc.CheckType == PingCheck {

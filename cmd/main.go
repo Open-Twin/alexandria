@@ -48,7 +48,7 @@ func main() {
 	api.Start()
 
 	healthchecks := loadbalancing.HealthCheck{
-		Node:      raftNode,
+		Nodes:     &raftNode.Fsm.DnsRepo.LbInfo,
 		Interval:  5000,
 		CheckType: loadbalancing.PingCheck,
 	}
