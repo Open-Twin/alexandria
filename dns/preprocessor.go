@@ -3,6 +3,7 @@ package dns
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
 )
 
 func (flags DNSFlags) WriteFlags() uint16 {
@@ -127,7 +128,8 @@ func (pdu DNSPDU) Bytes() ([]byte, error) {
 			return nil, err
 		}
 	}
-
+	log.Println("ANSWERS")
+	log.Println(pdu.AnswerResourceRecords)
 	err = writeResourceRecords(responseBuffer, pdu.AnswerResourceRecords)
 	if err != nil {
 		return nil, err

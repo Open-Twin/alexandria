@@ -47,7 +47,7 @@ func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 	log.Println(answer.Header)
 	log.Println(answer.Flags)
 	log.Println(answer.AnswerResourceRecords)
-	log.Println(string(answer.AnswerResourceRecords[0].ResourceData))
+	//log.Println(string(answer.AnswerResourceRecords[0].ResourceData))
 	log.Println("-------------------answer end-------------------")
 	return dns.PrepareToSend(answer)
 }
@@ -67,6 +67,7 @@ func queryDnsRepo(hostnames []string, api *DnsEntrypoint) []dns.DNSResourceRecor
 				}
 			}*/
 			log.Printf("Reqeusted domain not available: %s", hostname)
+			return nil
 		}else{
 			array = append(array, query)
 		}

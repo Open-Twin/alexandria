@@ -20,7 +20,12 @@ func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, logger *
 
 	request.Flags.CheckingDisabled = true
 
+	if requestedRecords == nil {
+		request.Flags.ResponseCode = 3
+	}
+
 	answer := addResourceRecords(request, requestedRecords, originalMessage)
+
 
 	return answer
 }
@@ -65,6 +70,7 @@ func PrepareToSend(pdu DNSPDU) []byte {
 	}
 	return resp
 }
+
 func checkForPointer(originalLabels []string, records []DNSResourceRecord) []DNSResourceRecord{
 	hostname := ConcatRevertLabels(originalLabels, false)
 	for i, record := range records {
