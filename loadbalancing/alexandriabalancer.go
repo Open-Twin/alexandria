@@ -97,16 +97,22 @@ func (balancer *AlexandriaBalancer) nextAddr() string {
 	balancer.lock.Lock()
 	defer balancer.lock.Unlock()
 
-	// implementation of the loadbalancing algorithm (round robin)
-	// move the pointer one ahead
-	balancer.pointer++
-	// if the pointer is larger than the number of nodes it has to be reset
-	if balancer.pointer >= len(balancer.nodes) {
-		balancer.pointer = 0
+	i := 0
+	for ip, health := range balancer.nodes {
+		if i == balancer.pointer && health.Healthy == true {
+			return ip
+		} else {
+			i += 1
+		}
+		if i > len(balancer.nodes) {
+			balancer.pointer = 0
+			break
+		}
 	}
 
-	address := balancer.dnsservers[balancer.pointer]
-	return address
+	balancer.pointer = i
+
+	return ""
 }
 
 /**
@@ -115,14 +121,17 @@ Forwards an incoming message to a dns node
 func (balancer *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
 	fmt.Println("Message received: " + string(msg))
 
-	if len(balancer.dnsservers) == 0 {
-		fmt.Println("No dns nodes to forward to.")
+	if len(balancer.nodes) == 0 {
+		log.Println("No dns nodes to forward to.")
 		return
 	}
 
 	adrentik := balancer.nextAddr()
+	if adrentik == "" {
+		log.Println("No healthy nodes available.")
+	}
 
-	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik+":"+strconv.Itoa(balancer.dnsport))
+	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik+":"+strconv.Itoa(balancer.DnsPort))
 	if err != nil {
 		fmt.Printf("Error on resolving dns address : %s\n", err)
 	}
@@ -142,5 +151,5 @@ func (balancer *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
 		fmt.Printf("Error on sending message to dns: %s\n", err)
 	}
 
-	fmt.Printf("Message forwareded to: %s:%d\n", adrentik, balancer.dnsport)
+	fmt.Printf("Message forwareded to: %s:%d\n", adrentik, balancer.DnsPort)
 }
