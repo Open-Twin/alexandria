@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"log"
+	"reflect"
 )
 
 func (flags DNSFlags) WriteFlags() uint16 {
@@ -46,7 +47,8 @@ func (flags DNSFlags) WriteFlags() uint16 {
 }
 
 func writeLabels(responseBuffer *bytes.Buffer, labels []string) error {
-	if labels == nil {
+	//TODO: Pointer ??
+	if reflect.DeepEqual(labels, []string{"P", "O", "I", "N", "T", "E", "R"}) {
 		_, err := responseBuffer.Write([]byte{0xc0, 0x0c})
 		return err
 	}

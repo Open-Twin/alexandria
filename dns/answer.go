@@ -21,12 +21,12 @@ func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, logger *
 	request.Flags.CheckingDisabled = true
 
 	if requestedRecords == nil {
+		//TODO: other response codes
 		request.Flags.ResponseCode = 3
+		return request
 	}
 
-	answer := addResourceRecords(request, requestedRecords, originalMessage)
-
-
+	answer := addAnswerResourceRecords(request, requestedRecords, originalMessage)
 	return answer
 }
 
@@ -34,8 +34,6 @@ func ExtractQuestionHostnames(pdu *DNSPDU) []string {
 	hostnames := make([]string, 0)
 
 	for _, question := range pdu.Questions {
-		pdu.Header.TotalAnswerResourceRecords += 1
-
 		domainName := ""
 		for i, part := range question.Labels {
 			domainName += part
@@ -50,8 +48,9 @@ func ExtractQuestionHostnames(pdu *DNSPDU) []string {
 	return hostnames
 }
 
-func addResourceRecords(pdu DNSPDU, requestedRecords []DNSResourceRecord, originalMessage []byte) DNSPDU {
+func addAnswerResourceRecords(pdu DNSPDU, requestedRecords []DNSResourceRecord, originalMessage []byte) DNSPDU {
 	for _, rrecord := range requestedRecords{
+		pdu.Header.TotalAnswerResourceRecords += 1
 		pdu.AnswerResourceRecords = append(pdu.AnswerResourceRecords, rrecord)
 	}
 	return pdu
@@ -75,7 +74,8 @@ func checkForPointer(originalLabels []string, records []DNSResourceRecord) []DNS
 	hostname := ConcatRevertLabels(originalLabels, false)
 	for i, record := range records {
 		if hostname == ConcatRevertLabels(record.Labels, true){
-			record.Labels = nil
+			//TODO: ??
+			record.Labels = []string{"P", "O", "I", "N", "T", "E", "R"}
 		}
 		records[i] = record
 	}

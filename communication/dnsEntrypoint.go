@@ -39,15 +39,15 @@ func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 	log.Println("-------------------create answer-------------------")
 
 	hostnames := dns.ExtractQuestionHostnames(&pdu)
-	log.Printf("HORST: %s", hostnames)
 
 	requestedRecords := queryDnsRepo(hostnames, api)
 
 	answer := dns.CreateAnswer(pdu, requestedRecords, api.Logger, buf)
-	log.Println(answer.Header)
-	log.Println(answer.Flags)
-	log.Println(answer.AnswerResourceRecords)
-	//log.Println(string(answer.AnswerResourceRecords[0].ResourceData))
+
+	log.Printf("Answer Header: %s\n", answer.Header)
+	log.Printf("Answer Flags: %s\n", answer.Flags)
+	log.Printf("Answer Answer Resource Records: %s\n", answer.AnswerResourceRecords)
+	log.Printf("Answer Additional Resource Records: %s\n", answer.AdditionalResourceRecords)
 	log.Println("-------------------answer end-------------------")
 	return dns.PrepareToSend(answer)
 }
