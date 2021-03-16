@@ -25,7 +25,7 @@ func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, logger *
 	return answer
 }
 
-func ExtractQuestionHostnames(pdu DNSPDU) []string {
+func ExtractQuestionHostnames(pdu *DNSPDU) []string {
 	hostnames := make([]string, 0)
 
 	for _, question := range pdu.Questions {
@@ -53,9 +53,25 @@ func addResourceRecords(pdu DNSPDU, requestedRecords []DNSResourceRecord, origin
 }
 
 func PrepareToSend(pdu DNSPDU) []byte {
+	// find duplicate labels
+	//if labels are duplicates, insert nil to mark a pointer
+	pdu.AnswerResourceRecords =  checkForPointer(pdu.Questions[0].Labels,pdu.AnswerResourceRecords)
+	pdu.AuthorityResourceRecords =  checkForPointer(pdu.Questions[0].Labels,pdu.AuthorityResourceRecords)
+	pdu.AdditionalResourceRecords = checkForPointer(pdu.Questions[0].Labels,pdu.AdditionalResourceRecords)
+
 	resp, err := pdu.Bytes()
 	if err != nil{
 		logging.Print(err.Error())
 	}
 	return resp
+}
+func checkForPointer(originalLabels []string, records []DNSResourceRecord) []DNSResourceRecord{
+	hostname := ConcatRevertLabels(originalLabels, false)
+	for i, record := range records {
+		if hostname == ConcatRevertLabels(record.Labels, true){
+			record.Labels = nil
+		}
+		records[i] = record
+	}
+	return records
 }

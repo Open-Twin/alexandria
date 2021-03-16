@@ -241,3 +241,17 @@ func readLabels(buffer *bytes.Buffer) ([]string, error){
 
 	return labels, nil
 }
+
+func ConcatRevertLabels(labels []string, revert bool) string {
+	if revert {
+		for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
+			labels[i], labels[j] = labels[j], labels[i]
+		}
+	}
+
+	var label string
+	for _, labelPart := range labels {
+		label += labelPart + "."
+	}
+	return label
+}

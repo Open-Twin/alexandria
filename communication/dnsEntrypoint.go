@@ -38,7 +38,7 @@ func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 	pdu := dns.HandleRequest(addr, buf)
 	log.Println("-------------------create answer-------------------")
 
-	hostnames := dns.ExtractQuestionHostnames(pdu)
+	hostnames := dns.ExtractQuestionHostnames(&pdu)
 	log.Printf("HORST: %s", hostnames)
 
 	requestedRecords := queryDnsRepo(hostnames, api)

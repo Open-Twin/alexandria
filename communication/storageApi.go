@@ -181,7 +181,6 @@ func generateResourceRecord(hostname, ip string) (dns.DNSResourceRecord, error) 
 		labels[i], labels[j] = labels[j], labels[i]
 	}
 
-
 	ipSections := strings.Split(ip, ".")
 	ipByte := make([]byte, 4)
 	for index, section := range ipSections {
