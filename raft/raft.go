@@ -1,7 +1,7 @@
 package raft
 
 import (
-	"github.com/Open-Twin/alexandria/raft/config"
+	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	bolt "github.com/hashicorp/raft-boltdb"
@@ -15,7 +15,7 @@ import (
 
 
 type Node struct {
-	config   *config.Config
+	config   *cfg.Config
 	RaftNode *raft.Raft
 	Fsm      *Fsm
 	logger   *log.Logger
@@ -24,9 +24,9 @@ type Node struct {
 /*
 creates and returns a new node
 */
-func NewNode(config *config.Config, logger *log.Logger) (*Node, error){
+func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
 	raftConfig := raft.DefaultConfig()
-	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
+	raftConfig.LocalID = raft.ServerID(config.RaftAddr.String())
 	//raftConfig.Logger = log.New(Logger, "", 0)
 
 	metarepo := storage.NewInMemoryStorageRepository()
@@ -81,10 +81,10 @@ func NewNode(config *config.Config, logger *log.Logger) (*Node, error){
 Creates a new node but without persistent storage
 only for tests
  */
-func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*Node, error){
+func NewInMemNodeForTesting(config *cfg.Config, logger *log.Logger) (*Node, error){
 
 	raftConfig := raft.DefaultConfig()
-	raftConfig.LocalID = raft.ServerID(config.RaftAddress.String())
+	raftConfig.LocalID = raft.ServerID(config.RaftAddr.String())
 	//raftConfig.Logger = log.New(Logger, "", 0)
 	metarepo := storage.NewInMemoryStorageRepository()
 	dnsrepo := storage.NewInMemoryDNSStorageRepository()
@@ -99,7 +99,7 @@ func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*Node, e
 
 	snapshotStore := raft.NewInmemSnapshotStore()
 
-	_, transport := raft.NewInmemTransport(raft.ServerAddress(config.RaftAddress.String()))
+	_, transport := raft.NewInmemTransport(raft.ServerAddress(config.RaftAddr.String()))
 
 	raftNode, err := raft.NewRaft(raftConfig,fsm, logStore, stableStore, snapshotStore, transport)
 	if err != nil {
@@ -127,13 +127,13 @@ func NewInMemNodeForTesting(config *config.Config, logger *log.Logger) (*Node, e
 /*
 creates a new tcp transport for raft
  */
-func newTransport(config *config.Config, logger *log.Logger) (*raft.NetworkTransport, error){
-	address, err := net.ResolveTCPAddr("tcp",config.RaftAddress.String())
+func newTransport(config *cfg.Config, logger *log.Logger) (*raft.NetworkTransport, error){
+	address, err := net.ResolveTCPAddr("tcp",config.RaftAddr.String())
 	if err != nil {
 		return nil, err
 	}
 	//Logger statt stdout
-	transport, err := raft.NewTCPTransport(address.String(), config.HTTPAddress, 3, 10*time.Second, os.Stdout)
+	transport, err := raft.NewTCPTransport(address.String(), config.HttpAddr, 3, 10*time.Second, os.Stdout)
 	if err != nil {
 		return nil, err
 	}
