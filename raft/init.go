@@ -3,57 +3,39 @@ package raft
 import (
 	"errors"
 	"fmt"
-	"github.com/Open-Twin/alexandria/raft/config"
+	"github.com/Open-Twin/alexandria/cfg"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func Main(){
-	//read config
-	rawConfig := config.ReadRawConfig()
-	//validate config
-	conf, err := rawConfig.ValidateConfig()
-
+func Start(conf *cfg.Config, raftLogger *log.Logger) (*Node,error){
+	raftNode, err := NewNode(conf, raftLogger)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", err)
-		os.Exit(1)
+		return nil, errors.New("Error configuring node: "+err.Error())
 	}
-	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
-	raftNode, err2 := NewNode(conf, raftLogger)
-	if err2 != nil {
-		fmt.Fprintf(os.Stderr, "Error configuring Node: %s", err2)
-		os.Exit(1)
-	}
-	//attempts to join a Node if join Address is given
-	joinaddr := conf.JoinAddress
-	raftaddr := conf.RaftAddress.String()
 
+	//attempts to join a node if join Address is given
 	//if joinaddress is given, join with that address
-	if joinaddr != "" {
-		go join(conf.JoinAddress, raftaddr, raftLogger, 0)
-	}else if conf.AutoJoin {
+	joinAddr := conf.JoinAddr
+	raftAddr := conf.RaftAddr
+	if conf.JoinAddr != nil {
+		go join(joinAddr.String(), raftAddr.String(), raftLogger, 0)
+	}else if conf.Autojoin {
 		//else try to autojoin
-		err := tryAutoJoin(raftaddr, strconv.Itoa(conf.AutojoinPort), strconv.Itoa(conf.HTTPPort), raftLogger)
+		err := tryAutoJoin(raftAddr.String(), strconv.Itoa(conf.UdpPort), strconv.Itoa(conf.HttpAddr.Port), raftLogger)
 		if err != nil{
 			raftLogger.Print("autojoin failed: "+err.Error())
 		}
 	}
 
-	httpLogger := *log.New(os.Stdout,"http: ",log.Ltime)
-	service := &HttpServer{
-		Node:    raftNode,
-		Address: conf.HTTPAddress,
-		Logger:  &httpLogger,
-	}
-	//starts the http service
-	service.Start()
+	return raftNode, nil
 }
+
 /*
  * tries to join node into cluster maxTries times.
  * if maxTries is 0, tries indefinitely.
@@ -137,4 +119,5 @@ func tryAutoJoin(raftaddr, broadcastPort, httpPort string, raftLogger *log.Logge
 	}
 
 }
+
 
