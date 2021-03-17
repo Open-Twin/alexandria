@@ -49,7 +49,7 @@ func main() {
 
 	healthchecks := loadbalancing.HealthCheck{
 		Nodes:     &raftNode.Fsm.DnsRepo.LbInfo,
-		Interval:  5000,
+		Interval:  30 * 1000,
 		CheckType: loadbalancing.PingCheck,
 	}
 	healthchecks.ScheduleHealthChecks()

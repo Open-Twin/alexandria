@@ -1,11 +1,11 @@
 package loadbalancing
 
 import (
-	"fmt"
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/go-ping/ping"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"runtime"
 	"time"
@@ -39,6 +39,7 @@ func (hc *HealthCheck) ScheduleHealthChecks() {
 }
 
 func (hc *HealthCheck) loopNodes() {
+	log.Printf("Running healthchecks")
 	for ip := range *hc.Nodes {
 		node := (*hc.Nodes)[ip]
 		if hc.CheckType == HttpCheck {
@@ -46,6 +47,7 @@ func (hc *HealthCheck) loopNodes() {
 		} else if hc.CheckType == PingCheck {
 			sendPingCheck(ip, &node)
 		}
+		(*hc.Nodes)[ip] = node
 	}
 }
 
@@ -53,15 +55,16 @@ func sendHttpCheck(ip string, node *dns.NodeHealth) {
 	resp, err := http.Get("http://" + ip + ":8080/health")
 	if err != nil {
 		node.Healthy = false
-		fmt.Printf("Node %s could not be reached: %s\n", ip, err)
+		log.Printf("Node %s could not be reached: %s\n", ip, err)
 		return
 	}
+
 	respBody, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode == 200 {
-		fmt.Printf("Node %s healthy. Response: %v\n", ip, string(respBody))
+		log.Printf("Node %s healthy. Response: %v\n", ip, string(respBody))
 		node.Healthy = true
 	} else {
-		fmt.Printf("Node %s responded with bad status code %v: %s\n", ip, resp.StatusCode, resp.Status)
+		log.Printf("Node %s responded with bad status code %v: %s\n", ip, resp.StatusCode, resp.Status)
 		node.Healthy = false
 	}
 }
@@ -69,7 +72,7 @@ func sendHttpCheck(ip string, node *dns.NodeHealth) {
 func sendPingCheck(ip string, node *dns.NodeHealth) {
 	pinger, err := ping.NewPinger(ip)
 	if err != nil {
-		fmt.Printf("Error on creating pinger: %s\n", err.Error())
+		log.Printf("Error on creating pinger: %s\n", err.Error())
 	}
 
 	os := runtime.GOOS
@@ -78,17 +81,19 @@ func sendPingCheck(ip string, node *dns.NodeHealth) {
 	}
 
 	pinger.Count = 3
+	pinger.Interval = 10
 	err = pinger.Run()
 	if err != nil {
-		fmt.Printf("Error on sending ping: %s\n", err.Error())
+		log.Printf("Error on sending ping: %s\n", err.Error())
 	}
 
 	stats := pinger.Statistics()
+
 	if stats.PacketsRecv > 1 {
-		fmt.Printf("Node %s healthy. Statistics: %+v\n", ip, stats)
+		log.Printf("Node %s healthy. Statistics: %+v\n", ip, stats)
 		node.Healthy = true
 	} else {
-		fmt.Printf("Node %s could not be reached. Statistics: %+v\n", ip, stats)
+		log.Printf("Node %s could not be reached. Statistics: %+v\n", ip, stats)
 		node.Healthy = false
 	}
 }
