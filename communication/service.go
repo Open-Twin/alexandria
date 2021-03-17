@@ -17,6 +17,7 @@ import (
 type HttpServer struct {
 	Node    *raft2.Node
 	Address net.TCPAddr
+	UdpPort int
 	Logger  *log.Logger
 }
 
@@ -25,17 +26,17 @@ Starts the webservice
  */
 func (server *HttpServer) Start() {
 	server.Logger.Printf("Start listening for auto-join requests")
-	go startAutojoinListener(strings.Split(server.Address.String(),":")[1])
+	go startAutojoinListener(server.UdpPort)
 	server.Logger.Printf("Starting server with Address %v\n", server.Address.String())
 	if err := http.ListenAndServe(server.Address.String(), server); err != nil {
 		server.Logger.Fatal("Error running HTTP server")
 	}
 }
-func startAutojoinListener(port string){
+func startAutojoinListener(port int){
 	//TODO: use udp endpoint
-	log.Print("PORT:"+port)
+	log.Print("PORT:"+strconv.Itoa(port))
 	//TODO: autojoin port
-	pc, err := net.ListenPacket("udp4", ":"+port)
+	pc, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		panic(err)
 	}
@@ -76,11 +77,12 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	leaderAddr := server.Node.Config.JoinAddr
-	log.Print("State: "+server.Node.RaftNode.State().String()+ " Leader addr: "+leaderAddr.String())
+	//leaderAddr := server.Node.Config.JoinAddr
+	leaderAddr := server.Node.RaftNode.Leader()
+	log.Print("State: "+server.Node.RaftNode.State().String()+ " Leader addr: "+string(leaderAddr))
 	if server.Node.RaftNode.State() != raft.Leader {
 		server.Logger.Print("forwarding join to leader")
-		forwardJoinToLeader(peerAddress, leaderAddr.String(), w)
+		forwardJoinToLeader(peerAddress, string(leaderAddr), server.Address.Port, w)
 		//sendResponse(request.Service,request.Key,"ok",,w)
 		return
 	}
@@ -125,11 +127,11 @@ func forwardToLeader(eventBytes []byte, path, leaderAddr string, request *event,
 	w.Write(bodyBytes)
 }*/
 
-func forwardJoinToLeader(peerAddr, leaderAddr string, w http.ResponseWriter){
+func forwardJoinToLeader(peerAddr, leaderAddr string, httpport int, w http.ResponseWriter){
 	leaderUrl := url.URL{
 		Scheme: "http",
 		//TODO: Leader address
-		Host:   leaderAddr,
+		Host:   strings.Split(leaderAddr,":")[0]+strconv.Itoa(httpport),
 		Path:   "join",
 	}
 

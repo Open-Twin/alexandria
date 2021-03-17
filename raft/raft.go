@@ -27,7 +27,7 @@ creates and returns a new node
 func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddr.String())
-	//raftConfig.Logger = log.New(Logger, "", 0)
+	//raftConfig.Logger = log.New(logger, "", 0)
 
 	metarepo := storage.NewInMemoryStorageRepository()
 	dnsrepo := storage.NewInMemoryDNSStorageRepository()

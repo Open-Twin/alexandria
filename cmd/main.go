@@ -16,8 +16,11 @@ func main() {
 	log.Print("Config: ")
 	log.Print(conf)
 	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
+
 	raftNode, err := raft.Start(&conf, raftLogger)
+
 	if err != nil{
+		raftLogger.Println("error creating node. EXITING")
 		os.Exit(1)
 	}
 
@@ -29,6 +32,7 @@ func main() {
 		Address: conf.HttpAddr,
 		Logger: &dnsEntrypointLogger,
 	}
+	raftLogger.Println("Starting DNS entrypoint")
 	dnsEntrypoint.StartDnsEntrypoint()
 
 	//dns api
@@ -40,6 +44,7 @@ func main() {
 		NetworkType: "udp",
 		Logger:      &apiLogger,
 	}
+	raftLogger.Println("Starting storage API")
 	api.Start()
 
 	healthchecks := loadbalancing.HealthCheck{
@@ -47,14 +52,17 @@ func main() {
 		Interval:  5000,
 		CheckType: loadbalancing.PingCheck,
 	}
+	raftLogger.Println("Starting healthchecks")
 	healthchecks.ScheduleHealthChecks()
 
 	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{
 		Node:    raftNode,
 		Address: conf.HttpAddr,
+		UdpPort: conf.UdpPort,
 		Logger:  &httpLogger,
 	}
 	//starts the http service (not in a goroutine so it blocks from exiting)
+	raftLogger.Println("Starting HTTP service")
 	service.Start()
 }

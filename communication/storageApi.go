@@ -36,6 +36,7 @@ func (api *API) Start() {
 
 	log.Println("Starting DNS")
 	go meta_udpserver.Start(func(addr net.Addr, buf []byte) []byte {
+		log.Println("got request")
 		resp := handleMetadata(addr, buf, api.Node, api.Logger)
 		return resp
 	})

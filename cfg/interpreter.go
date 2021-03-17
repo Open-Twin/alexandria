@@ -174,6 +174,7 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 		HttpAddr: httpAddr,
 		RaftAddr: raftAddr,
 		JoinAddr: joinAddr,
+		UdpPort: rawConfig.UdpPort,
 	}
 
 	//return config

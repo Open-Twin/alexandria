@@ -14,25 +14,26 @@ import (
 )
 
 func Start(conf *cfg.Config, raftLogger *log.Logger) (*Node,error){
+
 	raftNode, err := NewNode(conf, raftLogger)
 	if err != nil {
 		return nil, errors.New("Error configuring node: "+err.Error())
 	}
-
 	//attempts to join a node if join Address is given
 	//if joinaddress is given, join with that address
 	joinAddr := conf.JoinAddr
 	raftAddr := conf.RaftAddr
 	if conf.JoinAddr != nil {
+		raftLogger.Println("attempting join")
 		go join(joinAddr.String(), raftAddr.String(), raftLogger, 0)
 	}else if conf.Autojoin {
 		//else try to autojoin
+		raftLogger.Println("attempting auto-joining")
 		err := tryAutoJoin(raftAddr.String(), strconv.Itoa(conf.UdpPort), strconv.Itoa(conf.HttpAddr.Port), raftLogger)
 		if err != nil{
 			raftLogger.Print("autojoin failed: "+err.Error())
 		}
 	}
-
 	return raftNode, nil
 }
 
@@ -62,13 +63,13 @@ func join(joinaddr, raftaddr string, raftLogger *log.Logger, maxTries int) error
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("non 200 status code: %d", resp.StatusCode)
 		}
-		raftLogger.Print("join successful")
+		raftLogger.Print("join successful: "+joinaddr)
 		return nil
 	}
 	failedJoins := -1
 	for {
 		if err := retryJoin(); err != nil {
-			raftLogger.Print("error joining cluster")
+			raftLogger.Print("error joining cluster: "+joinaddr)
 			failedJoins++
 			if maxTries > 0 && failedJoins >= maxTries {
 				return errors.New("exceeded maximum join tries")
@@ -110,9 +111,10 @@ func tryAutoJoin(raftaddr, broadcastPort, httpPort string, raftLogger *log.Logge
 		}
 		raftLogger.Printf("autojoin received response from \"%s: %s\n", respaddr, buf[:n])
 		//try joining address but with http port
-		err = join(strings.Split(respaddr.String(),":")[0]+":"+httpPort, raftaddr, raftLogger, 3)
+		err = join(strings.Split(respaddr.String(),":")[0]+":"+httpPort, raftaddr, raftLogger, 5)
 		if err != nil {
 			raftLogger.Print("failed autojoin request to "+respaddr.String()+":"+err.Error())
+			raftLogger.Print("waiting for other replies")
 		}else{
 			return nil
 		}
