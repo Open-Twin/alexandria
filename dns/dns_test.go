@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 		Address: conf.HttpAddr,
 		Logger: &dnsEntrypointLogger,
 	}
-	dnsEntrypoint.StartDnsEntrypoint()
+	dnsEntrypoint.Start()
 
 	//dns api
 	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
