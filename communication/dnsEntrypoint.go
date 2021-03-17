@@ -13,7 +13,7 @@ type DnsEntrypoint struct {
 	Logger  *log.Logger
 }
 
-func (api *DnsEntrypoint) StartDnsEntrypoint(){
+func (api *DnsEntrypoint) Start(){
 	udpserver := UDPServer{
 		Address: []byte{0,0,0,0},
 		Port: 53,

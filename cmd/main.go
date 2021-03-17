@@ -33,7 +33,7 @@ func main() {
 		Logger: &dnsEntrypointLogger,
 	}
 	raftLogger.Println("Starting DNS entrypoint")
-	dnsEntrypoint.StartDnsEntrypoint()
+	dnsEntrypoint.Start()
 
 	//dns api
 	apiLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
