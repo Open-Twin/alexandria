@@ -59,11 +59,13 @@ func (balancer *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *
 	ip := r.Form["ip"][0]
 
 	balancer.lock.Lock()
-	defer balancer.lock.Unlock()
 	balancer.nodes[ip] = dns.NodeHealth{
 		Healthy:     false,
 		Connections: 0,
 	}
+	balancer.lock.Unlock()
+
+	w.Write([]byte("succesfully added"))
 }
 
 /**
@@ -105,7 +107,7 @@ func (balancer *AlexandriaBalancer) nextAddr() string {
 			i += 1
 		}
 		if i > len(balancer.nodes) {
-			balancer.pointer = 0
+			i = 0
 			break
 		}
 	}

@@ -54,6 +54,8 @@ func main() {
 	}
 	healthchecks.ScheduleHealthChecks()
 
+	loadbalancing.StartLoadReporting()
+
 	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{
 		Node:    raftNode,
