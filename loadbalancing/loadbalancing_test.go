@@ -127,7 +127,7 @@ func TestLoadbalancerRequest(t *testing.T) {
 
 	signinLocalhost(t, "http://"+lbIp+":8080/")
 
-	answer := sendRequest(t, lbIp+strconv.Itoa(dnsPort))
+	answer := sendRequest(t, lbIp+":"+strconv.Itoa(dnsPort))
 	if answer != dnsAnswer {
 		t.Errorf("Wrong answer from dns server: %s", answer)
 	}
