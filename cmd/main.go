@@ -40,7 +40,8 @@ func main() {
 	api := &communication.API{
 		Node: raftNode,
 		//TODO: address and type from config
-		Address: conf.HttpAddr,
+		MetaAddress: conf.MetaApiAddr,
+		DNSAddress: conf.DnsApiAddr,
 		NetworkType: "udp",
 		Logger:      &apiLogger,
 	}

@@ -17,7 +17,8 @@ import (
 
 type API struct {
 	Node    *raft.Node
-	Address net.TCPAddr
+	MetaAddress net.TCPAddr
+	DNSAddress net.TCPAddr
 	NetworkType string
 	Logger  *log.Logger
 }
@@ -30,8 +31,8 @@ func (api *API) Start() {
 	Metadata
 	 */
 	meta_udpserver := UDPServer{
-		Address: []byte{0,0,0,0},
-		Port: 20000,
+		Address: api.MetaAddress.IP,
+		Port: api.MetaAddress.Port,
 	}
 
 	log.Println("Starting DNS")
@@ -45,8 +46,8 @@ func (api *API) Start() {
 	DNS
 	 */
 	dns_udpserver := UDPServer{
-		Address: []byte{0,0,0,0},
-		Port: 10000,
+		Address: api.DNSAddress.IP,
+		Port: api.DNSAddress.Port,
 	}
 
 	log.Println("Starting DNS")
