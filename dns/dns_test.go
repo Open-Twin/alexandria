@@ -16,12 +16,12 @@ import (
 func TestMain(m *testing.M) {
 	logger := log.New(os.Stdout,"",log.Ltime)
 
-	raftaddr := &net.TCPAddr{
+	raftaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 7000,
 	}
 
-	httpaddr := &net.TCPAddr{
+	httpaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 8000,
 	}
@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 		Address: conf.HttpAddr,
 		Logger: &dnsEntrypointLogger,
 	}
-	dnsEntrypoint.StartDnsEntrypoint()
+	dnsEntrypoint.Start()
 
 	//dns api
 	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
