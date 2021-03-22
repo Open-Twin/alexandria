@@ -43,11 +43,13 @@ func main() {
 	api.Start()
 
 	healthchecks := loadbalancing.HealthCheck{
-		Node:      raftNode,
-		Interval:  5000,
+		Nodes:     &raftNode.Fsm.DnsRepo.LbInfo,
+		Interval:  30 * 1000,
 		CheckType: loadbalancing.PingCheck,
 	}
 	healthchecks.ScheduleHealthChecks()
+
+	loadbalancing.StartLoadReporting()
 
 	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{

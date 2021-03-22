@@ -9,7 +9,7 @@ import (
 func StartLoadReporting() {
 	http.HandleFunc("/health", sendLoad)
 	go http.ListenAndServe(":8080", nil)
-	fmt.Println("Started reporting current server load")
+	fmt.Println("Started reporting alexandria server load")
 }
 
 func sendLoad(w http.ResponseWriter, r *http.Request) {
