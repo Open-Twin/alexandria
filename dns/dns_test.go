@@ -25,6 +25,14 @@ func TestMain(m *testing.M) {
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 8000,
 	}
+	metaaddr := net.TCPAddr{
+		IP: net.ParseIP("127.0.0.1"),
+		Port: 20000,
+	}
+	dnsaddr := net.TCPAddr{
+		IP: net.ParseIP("127.0.0.1"),
+		Port: 10000,
+	}
 
 	joinaddr := &net.TCPAddr{
 		IP: net.ParseIP("1.2.3.4"),
@@ -40,6 +48,8 @@ func TestMain(m *testing.M) {
 		HealthcheckInterval: 2000,
 		RaftAddr: raftaddr,
 		HttpAddr: httpaddr,
+		MetaApiAddr: metaaddr,
+		DnsApiAddr: dnsaddr,
 		JoinAddr: joinaddr,
 	}
 	node, err := raft.NewInMemNodeForTesting(&conf, logger)
@@ -67,7 +77,8 @@ func TestMain(m *testing.M) {
 	dnsApi := &communication.API{
 		Node: node,
 		//TODO: address and type from config
-		Address: conf.HttpAddr,
+		MetaAddress: conf.MetaApiAddr,
+		DNSAddress: conf.DnsApiAddr,
 		NetworkType: "udp",
 		Logger: &dnsApiLogger,
 	}

@@ -283,19 +283,19 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 		log.Printf("Using default value for %s istead: %s\n", "JoinAddr", JoinAddr)
 		conf.JoinAddr = JoinAddr
 	case "HttpPort":
-		log.Printf("Using default value for %s istead: %s\n", "HttpPort", HttpPort)
+		log.Printf("Using default value for %s istead: %v\n", "HttpPort", HttpPort)
 		conf.HttpPort = HttpPort
 	case "RaftPort":
-		log.Printf("Using default value for %s istead: %s\n", "RaftPort", RaftPort)
+		log.Printf("Using default value for %s istead: %v\n", "RaftPort", RaftPort)
 		conf.RaftPort = RaftPort
 	case "MetaApiPort":
-		log.Printf("Using default value for %s istead: %s\n", "MetaApiPort", MetaApiPort)
+		log.Printf("Using default value for %s istead: %v\n", "MetaApiPort", MetaApiPort)
 		conf.MetaApiPort = MetaApiPort
 	case "DnsApiPort":
-		log.Printf("Using default value for %s istead: %s\n", "DnsApiPort", DnsApiPort)
+		log.Printf("Using default value for %s istead: %v\n", "DnsApiPort", DnsApiPort)
 		conf.DnsApiPort = DnsApiPort
 	case "UdpPort":
-		log.Printf("Using default value for %s istead: %s\n", "UdpPort", UdpPort)
+		log.Printf("Using default value for %s istead: %v\n", "UdpPort", UdpPort)
 		conf.UdpPort = UdpPort
 	}
 }
