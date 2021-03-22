@@ -50,10 +50,10 @@ func TestConfSetCorrectly(t *testing.T) {
 		t.Errorf("Reading HealthcheckInterval failed: %v\n", cfg.HealthcheckInterval)
 	}
 	if cfg.HttpAddr.String() != "127.0.0.1:1234" {
-		t.Errorf("Reading HttpAddress failed: %s\n", cfg.HttpAddr)
+		t.Errorf("Reading HttpAddress failed: %v\n", cfg.HttpAddr)
 	}
 	if cfg.RaftAddr.String() != "127.0.0.1:4321" {
-		t.Errorf("Reading RaftAddress failed: %s\n", cfg.RaftAddr)
+		t.Errorf("Reading RaftAddress failed: %v\n", cfg.RaftAddr)
 	}
 	if cfg.JoinAddr.String() != "127.0.0.1:1234" {
 		t.Errorf("Reading JoinAddress failed: %s\n", cfg.JoinAddr)
@@ -73,9 +73,16 @@ func TestValidateValidConfig(t *testing.T){
 		HealthcheckInterval: 2000,
 		RaftAddr: "1.2.3.4",
 		HttpAddr: "1.2.3.4",
+		MetaApiAddr: "1.2.3.4",
+		DnsApiAddr: "1.2.3.4",
+		DnsAddr: "1.2.3.4",
 		JoinAddr: "1.2.3.4",
 		RaftPort: 7000,
 		HttpPort: 8000,
+		MetaApiPort: 20000,
+		DnsApiPort: 10000,
+		UdpPort: 9000,
+		DnsPort: 53,
 	}
 	_, err := validateConfig(cfg)
 	if err != nil {

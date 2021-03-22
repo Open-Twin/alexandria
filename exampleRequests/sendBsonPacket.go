@@ -1,11 +1,11 @@
-package main
+package examples
 
 import (
 	"gopkg.in/mgo.v2/bson"
 	"os"
 )
 
-func main() {
+func sendBsonPacket() {
 	address := "127.0.0.1:10000"
 	/*msg := bson.M{
 		"Labels":             []string{"at", "ac", "dejan"},

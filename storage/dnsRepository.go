@@ -23,15 +23,15 @@ type DNSRepository interface {
 
 // Creating a structure for the Metadata containing the necessary variables
 type StorageRepository struct {
-	Entries map[hostname]map[ip]record
+	Entries map[hostname]map[Ip]record
 	// Creating a mutex onto the Metadata variable in order to handle threads
 	mutex  sync.RWMutex
-	LbInfo map[ip]dns.NodeHealth
+	LbInfo map[Ip]dns.NodeHealth
 }
 
 func NewInMemoryDNSStorageRepository() *StorageRepository {
-	entries := make(map[hostname]map[ip]record)
-	info := make(map[ip]dns.NodeHealth)
+	entries := make(map[hostname]map[Ip]record)
+	info := make(map[Ip]dns.NodeHealth)
 	return &StorageRepository{
 		Entries: entries,
 		LbInfo:  info,

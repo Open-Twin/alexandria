@@ -9,26 +9,44 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
-
+const apiAddr = "127.0.0.1"
+const apiPort = 10001
+const entrypointAddr = "127.0.0.1:10002"
+const entrypointPort = 10002
 func TestMain(m *testing.M) {
 	logger := log.New(os.Stdout,"",log.Ltime)
 
-	raftaddr := &net.TCPAddr{
+	raftaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 7000,
+		Port: 7001,
 	}
 
-	httpaddr := &net.TCPAddr{
+	httpaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 8000,
+		Port: 8001,
+	}
+	metaaddr := net.TCPAddr{
+		IP: net.ParseIP("127.0.0.1"),
+		Port: 20001,
+	}
+	dnsaddr := net.TCPAddr{
+		IP: net.ParseIP(entrypointAddr),
+		Port: entrypointPort,
+	}
+
+	dnsapiaddr := net.TCPAddr{
+
+		IP: net.ParseIP(apiAddr),
+		Port: apiPort,
 	}
 
 	joinaddr := &net.TCPAddr{
 		IP: net.ParseIP("1.2.3.4"),
-		Port: 8000,
+		Port: 8001,
 	}
 
 	conf := cfg.Config{
@@ -40,34 +58,38 @@ func TestMain(m *testing.M) {
 		HealthcheckInterval: 2000,
 		RaftAddr: raftaddr,
 		HttpAddr: httpaddr,
+		MetaApiAddr: metaaddr,
+		DnsApiAddr: dnsapiaddr,
+		DnsAddr: dnsaddr,
 		JoinAddr: joinaddr,
 	}
 	node, err := raft.NewInMemNodeForTesting(&conf, logger)
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
-	s := communication.HttpServer{
+	/*s := communication.HttpServer{
 		Node: node,
 		Address: httpaddr,
 		Logger: logger,
 	}
-	go s.Start()
+	go s.Start()*/
 
 	//dns entrypoint
 	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node: node,
-		Address: conf.HttpAddr,
+		Address: conf.DnsAddr,
 		Logger: &dnsEntrypointLogger,
 	}
-	dnsEntrypoint.StartDnsEntrypoint()
+	dnsEntrypoint.Start()
 
 	//dns api
 	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsApi := &communication.API{
 		Node: node,
 		//TODO: address and type from config
-		Address: conf.HttpAddr,
+		MetaAddress: conf.MetaApiAddr,
+		DNSAddress: conf.DnsApiAddr,
 		NetworkType: "udp",
 		Logger: &dnsApiLogger,
 	}
@@ -113,7 +135,7 @@ func TestStoreEntry(t *testing.T) {
 		"RequestType" : "store",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -128,7 +150,7 @@ func TestUpdateEntry(t *testing.T) {
 		"RequestType" : "update",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -143,7 +165,7 @@ func TestDeleteEntry(t *testing.T) {
 		"RequestType" : "delete",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
