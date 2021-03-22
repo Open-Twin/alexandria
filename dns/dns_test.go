@@ -9,10 +9,14 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
-
+const apiAddr = "127.0.0.1"
+const apiPort = 10001
+const entrypointAddr = "127.0.0.1:10002"
+const entrypointPort = 10002
 func TestMain(m *testing.M) {
 	logger := log.New(os.Stdout,"",log.Ltime)
 
@@ -30,8 +34,14 @@ func TestMain(m *testing.M) {
 		Port: 20001,
 	}
 	dnsaddr := net.TCPAddr{
-		IP: net.ParseIP("127.0.0.1"),
-		Port: 19001,
+		IP: net.ParseIP(entrypointAddr),
+		Port: entrypointPort,
+	}
+
+	dnsapiaddr := net.TCPAddr{
+
+		IP: net.ParseIP(apiAddr),
+		Port: apiPort,
 	}
 
 	joinaddr := &net.TCPAddr{
@@ -49,7 +59,8 @@ func TestMain(m *testing.M) {
 		RaftAddr: raftaddr,
 		HttpAddr: httpaddr,
 		MetaApiAddr: metaaddr,
-		DnsApiAddr: dnsaddr,
+		DnsApiAddr: dnsapiaddr,
+		DnsAddr: dnsaddr,
 		JoinAddr: joinaddr,
 	}
 	node, err := raft.NewInMemNodeForTesting(&conf, logger)
@@ -67,7 +78,7 @@ func TestMain(m *testing.M) {
 	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node: node,
-		Address: conf.HttpAddr,
+		Address: conf.DnsAddr,
 		Logger: &dnsEntrypointLogger,
 	}
 	dnsEntrypoint.Start()
@@ -124,7 +135,7 @@ func TestStoreEntry(t *testing.T) {
 		"RequestType" : "store",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -139,7 +150,7 @@ func TestUpdateEntry(t *testing.T) {
 		"RequestType" : "update",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -154,7 +165,7 @@ func TestDeleteEntry(t *testing.T) {
 		"RequestType" : "delete",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
