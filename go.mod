@@ -2,9 +2,6 @@ module github.com/Open-Twin/alexandria
 
 go 1.15
 
-<<<<<<< HEAD
-require go.mongodb.org/mongo-driver v1.4.4
-=======
 require (
 	github.com/go-ping/ping v0.0.0-20210216210419-25d1413fb7bb
 	github.com/go-playground/validator/v10 v10.4.1
@@ -16,4 +13,3 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
->>>>>>> origin/develop

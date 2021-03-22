@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"errors"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 /*
@@ -16,11 +15,11 @@ type requestType = string
 type MetadataService interface {
 	Init(repository MetadataRepository) MetadataServiceImpl
 	HandleRequest(service, ip, key, requestType string) error
-	POSTRequest(repository MetadataRepository, service, ip, key, value string) bool
-	GETRequest(repository MetadataRepository, service, ip, key string) bool
-	UPDATERequest(repository MetadataRepository, service, ip, key, value string) bool
-	DELETERequest(repository MetadataRepository, service, ip, key string) bool
-	ResponseRequest(repository MetadataRepository) bool
+	POSTRequest(repository MetadataRepository, service, ip, key, value string) error
+	GETRequest(repository MetadataRepository, service, ip, key string) error
+	UPDATERequest(repository MetadataRepository, service, ip, key, value string) error
+	DELETERequest(repository MetadataRepository, service, ip, key string) error
+	ResponseRequest(repository MetadataRepository) error
 }
 
 type MetadataServiceImpl struct {
@@ -33,37 +32,89 @@ func Init(repository MetadataRepository) MetadataServiceImpl {
 	}
 }
 
-func POSTRequest(repository MetadataRepository, service, ip, key, value string) bool {
-
+func POSTRequest(repository MetadataRepository, service, ip, key, value string) error {
+	err := repository.Create(service, ip, key, value)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func GETRequest(repository MetadataRepository, service, ip, key string) bool {
-
+func GETRequest(repository MetadataRepository, service, ip, key string) error {
+	_, err := repository.Read(service, ip, key)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func UPDATERequest(repository MetadataRepository, service, ip, key, value string) bool {
-
+func UPDATERequest(repository MetadataRepository, service, ip, key, value string) error {
+	err := repository.Update(service, ip, key, value)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func DELETERequest(repository MetadataRepository, service, ip, key string) bool {
-
+func DELETERequest(repository MetadataRepository, service, ip, key string) error {
+	err := repository.Delete(service, ip, key)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func ResponseRequest(repository MetadataRepository) bool {
-
+func ResponseRequest(repository MetadataRepository, service, ip, key, value, requestType string, err error) error {
+	if err != nil {
+		
+	}
 }
 
 func (msi *MetadataServiceImpl) HandleRequest (service, ip, key, value, requestType string) error {
 	if !msi.repository.Exists(service, ip, key) {
-		if requestType == "get" {
-			return errors.New("not existing: the given key doesnt exist, thus no data can be returned")
-		} else if requestType == "restore" {
-			err := msi.repository.Create(service, ip, key, value)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			return errors.New("unsupported operation: the given operation you'd like to execute isn't supported")
+		switch requestType {
+			case "get":
+				return errors.New("not existing: the given key doesnt exist, thus no data can be returned")
+			case "update":
+				return errors.New("not existing: the given key doesnt exist, thus no data can be updated")
+			case "delete":
+				return errors.New("not existing: the given key doesnt exist, thus no data can be deleted")
+			case "store":
+				err := POSTRequest(msi.repository, service, ip, key, value)
+				if err != nil {
+					return err
+				}
+				return nil
+			default:
+				return errors.New("unsupported operation: the given operation you'd like to execute isn't supported")
 		}
+	}
+	switch requestType {
+		case "get":
+			err := GETRequest(msi.repository, service, ip, key)
+			if err != nil {
+				return err
+			}
+			return nil
+		case "update":
+			err := UPDATERequest(msi.repository, service, ip, key, value)
+			if err != nil {
+				return err
+			}
+			return nil
+		case "delete":
+			err := DELETERequest(msi.repository, service, ip, key)
+			if err != nil {
+				return err
+			}
+			return nil
+		case "store":
+			err := POSTRequest(msi.repository, service, ip, key, value)
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			return errors.New("unsupported operation: the given operation you'd like to execute isn't supported")
 	}
 }
