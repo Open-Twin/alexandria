@@ -16,11 +16,11 @@ import (
 )
 
 type API struct {
-	Node    *raft.Node
+	Node        *raft.Node
 	MetaAddress net.TCPAddr
-	DNSAddress net.TCPAddr
+	DNSAddress  net.TCPAddr
 	NetworkType string
-	Logger  *log.Logger
+	Logger      *log.Logger
 }
 
 const ipv6Type = 28
@@ -28,11 +28,11 @@ const ipv4Type = 1
 
 func (api *API) Start() {
 	/*
-	Metadata
-	 */
+		Metadata
+	*/
 	meta_udpserver := UDPServer{
 		Address: api.MetaAddress.IP,
-		Port: api.MetaAddress.Port,
+		Port:    api.MetaAddress.Port,
 	}
 
 	log.Println("Starting DNS")
@@ -43,11 +43,11 @@ func (api *API) Start() {
 	})
 
 	/*
-	DNS
-	 */
+		DNS
+	*/
 	dns_udpserver := UDPServer{
 		Address: api.DNSAddress.IP,
-		Port: api.DNSAddress.Port,
+		Port:    api.DNSAddress.Port,
 	}
 
 	log.Println("Starting DNS")
@@ -57,39 +57,38 @@ func (api *API) Start() {
 	})
 }
 
-
-func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
+func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte {
 	request := struct {
 		Service string `bson:"service"`
-		Ip string `bson:"ip"`
-		Type string `bson:"type"`
-		Key string `bson:"key"`
-		Value string `bson:"value"`
+		Ip      string `bson:"ip"`
+		Type    string `bson:"type"`
+		Key     string `bson:"key"`
+		Value   string `bson:"value"`
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {
-		logger.Println("Bad request: "+err.Error())
-		return createResponse("","error","something went wrong. please check your input.")
+		logger.Println("Bad request: " + err.Error())
+		return createResponse("", "error", "something went wrong. please check your input.")
 	}
 	//handle get request
 	if request.Type == "get" {
-		data, err := node.Fsm.MetadataRepo.Read(request.Service,request.Ip,request.Key)
+		data, err := node.Fsm.MetadataRepo.Read(request.Service, request.Ip, request.Key)
 		if err != nil {
 			//return error
-			return createMetadataResponse(request.Service,request.Key,"error",err.Error())
+			return createMetadataResponse(request.Service, request.Key, "error", err.Error())
 		}
-		return createMetadataResponse(request.Service,request.Key,"data",data)
+		return createMetadataResponse(request.Service, request.Key, "data", data)
 	}
 	//handle other requests
 
 	//marshal record
 	event := storage.Metadata{
 		Dnsormetadata: false,
-		Service: request.Service,
-		Ip: request.Ip,
-		Type: request.Type,
-		Key: request.Key,
-		Value: request.Value,
+		Service:       request.Service,
+		Ip:            request.Ip,
+		Type:          request.Type,
+		Key:           request.Key,
+		Value:         request.Value,
 	}
 
 	eventBytes, err := json.Marshal(event)
@@ -100,28 +99,28 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 	//Apply to Raft cluster
 	applyFuture := node.RaftNode.Apply(eventBytes, 5*time.Second)
 	if err := applyFuture.Error(); err != nil {
-		logger.Println("could not apply to raft cluster: "+err.Error())
-		return createMetadataResponse(request.Service,request.Key,"error",err.Error())
+		logger.Println("could not apply to raft cluster: " + err.Error())
+		return createMetadataResponse(request.Service, request.Key, "error", err.Error())
 	}
 	var resp []byte
-	if err != nil{
-		resp = createMetadataResponse(request.Service,request.Key,"error","something went wrong. please check your input.")
-	}else {
-		resp = createMetadataResponse(request.Service,request.Key,"ok","null")
+	if err != nil {
+		resp = createMetadataResponse(request.Service, request.Key, "error", "something went wrong. please check your input.")
+	} else {
+		resp = createMetadataResponse(request.Service, request.Key, "ok", "null")
 	}
 	return resp
 }
 
-func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
+func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte {
 	request := struct {
-		Hostname string `bson:"Hostname"`
-		Ip string `bson:"Ip"`
+		Hostname    string `bson:"Hostname"`
+		Ip          string `bson:"Ip"`
 		RequestType string `bson:"RequestType"`
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {
-		logger.Println("Bad request: "+err.Error())
-		return createResponse("","error","something went wrong. please check your input.")
+		logger.Println("Bad request: " + err.Error())
+		return createResponse("", "error", "something went wrong. please check your input.")
 	}
 
 	//create new resource record
@@ -130,10 +129,10 @@ func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logge
 
 	//marshal record
 	event := storage.Dnsresource{
-		Dnsormetadata: true,
-		Hostname: request.Hostname,
-		Ip: request.Ip,
-		RequestType: request.RequestType,
+		Dnsormetadata:  true,
+		Hostname:       request.Hostname,
+		Ip:             request.Ip,
+		RequestType:    request.RequestType,
 		ResourceRecord: rrecord,
 	}
 
@@ -144,15 +143,22 @@ func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logge
 
 	//Apply to Raft cluster
 	applyFuture := node.RaftNode.Apply(eventBytes, 5*time.Second)
+	/*
+		if reflect.TypeOf(applyFuture).Kind() == reflect.TypeOf(errors.New("aris sohn")).Kind() {
+			// TODO: Cleanup errors
+			logger.Println("could not apply to raft cluster" + applyFuture.Error().Error())
+			return createResponse("","error","something went wrong. please check your input.")
+		}*/
+
 	if err := applyFuture.Error(); err != nil {
-		logger.Println("could not apply to raft cluster: "+err.Error())
-		return createResponse("","error","something went wrong. please check your input.")
+		logger.Println("could not apply to raft cluster: " + err.Error())
+		return createResponse("", "error", "something went wrong. please check your input.")
 	}
 	var resp []byte
-	if err != nil{
-		resp = createResponse("","error","something went wrong. please check your input.")
-	}else {
-		resp = createResponse(request.Hostname,"ok","null")
+	if err != nil {
+		resp = createResponse("", "error", "something went wrong. please check your input.")
+	} else {
+		resp = createResponse(request.Hostname, "ok", "null")
 	}
 	return resp
 }
@@ -160,15 +166,15 @@ func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logge
 func generateResourceRecord(hostname, ip string) (dns.DNSResourceRecord, error) {
 	validate := validator.New()
 	//check if hostname is valid
-	errs := validate.Var(hostname,"required,hostname")
+	errs := validate.Var(hostname, "required,hostname")
 	//TODO: errors
-	if errs != nil{
+	if errs != nil {
 		return dns.DNSResourceRecord{}, errors.New("hostname is not valid")
 	}
 	//check if ip is valid ipv4 or ipv6
 	errs = validate.Var(ip, "required,ipv4")
 	ipType := ipv4Type
-	if errs != nil{
+	if errs != nil {
 		errs := validate.Var(ip, "required,ipv6")
 		if errs != nil {
 			return dns.DNSResourceRecord{}, errors.New("ip is not a valid ipv4 or ipv6 address")
@@ -198,11 +204,10 @@ func generateResourceRecord(hostname, ip string) (dns.DNSResourceRecord, error) 
 	rrecord := dns.DNSResourceRecord{
 		Labels:             labels,
 		Type:               uint16(ipType), // A Record
-		Class: 				1, // Internet Class
+		Class:              1,              // Internet Class
 		TimeToLive:         1,
 		ResourceDataLength: uint16(len(ipByte)),
 		ResourceData:       ipByte,
 	}
 	return rrecord, nil
 }
-
