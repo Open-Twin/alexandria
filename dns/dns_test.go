@@ -18,25 +18,25 @@ func TestMain(m *testing.M) {
 
 	raftaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 7000,
+		Port: 7001,
 	}
 
 	httpaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 8000,
+		Port: 8001,
 	}
 	metaaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 20000,
+		Port: 20001,
 	}
 	dnsaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 10000,
+		Port: 19001,
 	}
 
 	joinaddr := &net.TCPAddr{
 		IP: net.ParseIP("1.2.3.4"),
-		Port: 8000,
+		Port: 8001,
 	}
 
 	conf := cfg.Config{
