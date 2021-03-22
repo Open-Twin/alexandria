@@ -114,9 +114,9 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 
 func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte{
 	request := struct {
-		Hostname string `bson:"hostname"`
-		Ip string `bson:"ip"`
-		RequestType string `bson:"requestType"`
+		Hostname string `bson:"Hostname"`
+		Ip string `bson:"Ip"`
+		RequestType string `bson:"RequestType"`
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {

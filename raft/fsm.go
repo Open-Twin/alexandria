@@ -100,6 +100,7 @@ func applyToDnsStore(fsm *Fsm, e storage.Dnsresource) error {
 		return nil
 	default:
 		log.Printf("Unrecognized dns event type in Raft log entry: %s.", e.RequestType)
+		// TODO: Return error
 	}
 	return nil
 }
