@@ -44,8 +44,8 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	// Listen for connections
 	go udpServer.Start(func(addr net.Addr, msg []byte) []byte {
 		// Run the method for every message received
-		go lb.forwardMsg(addr, msg)
-		return []byte("request forwarded")
+		ans := lb.forwardMsg(addr, msg)
+		return []byte(ans)
 	})
 }
 
@@ -105,12 +105,12 @@ func (lb *AlexandriaBalancer) nextAddr() string {
 /**
 Forwards an incoming message to a dns node
 */
-func (lb *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
+func (lb *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) string {
 	fmt.Println("Message received: " + string(msg))
 
 	if len(lb.nodes) == 0 {
 		log.Println("No dns nodes to forward to.")
-		return
+		return "no nodes available"
 	}
 
 	adrentik := lb.nextAddr()
@@ -139,4 +139,5 @@ func (lb *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) {
 	}
 
 	log.Printf("Message forwareded to: %s:%d\n", adrentik, lb.DnsPort)
+	return "yeah"
 }
