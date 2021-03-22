@@ -19,10 +19,10 @@ func TestMain(m *testing.M) {
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 7000,
 	}
-	httpaddr := net.TCPAddr{
+	/*httpaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 8000,
-	}
+	}*/
 	metaaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 20000,
@@ -52,15 +52,6 @@ func TestMain(m *testing.M) {
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
 
-	//dns entrypoint
-	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	dnsEntrypoint := &DnsEntrypoint{
-		Node: node,
-		Address: conf.HttpAddr,
-		Logger: &dnsEntrypointLogger,
-	}
-	dnsEntrypoint.Start()
-
 	//dns api
 	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsApi := &API{
@@ -73,12 +64,12 @@ func TestMain(m *testing.M) {
 	}
 	dnsApi.Start()
 
-	var s = &HttpServer{
+	/*var s = &HttpServer{
 		Node:    node,
 		Address: httpaddr,
 		Logger:  logger,
 	}
-	go s.Start()
+	go s.Start()*/
 
 
 	time.Sleep(5 * time.Second)

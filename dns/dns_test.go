@@ -56,12 +56,12 @@ func TestMain(m *testing.M) {
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
-	s := communication.HttpServer{
+	/*s := communication.HttpServer{
 		Node: node,
 		Address: httpaddr,
 		Logger: logger,
 	}
-	go s.Start()
+	go s.Start()*/
 
 	//dns entrypoint
 	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)

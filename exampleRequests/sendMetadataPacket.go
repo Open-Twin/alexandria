@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func main() {
+func sendMetadataPacket() {
 	address := "127.0.0.1:20000"
 	/*msg := bson.M{
 		"Labels":             []string{"at", "ac", "dejan"},
