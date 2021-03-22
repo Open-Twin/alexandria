@@ -15,7 +15,7 @@ import (
 
 
 type Node struct {
-	config   *cfg.Config
+	Config   *cfg.Config
 	RaftNode *raft.Raft
 	Fsm      *Fsm
 	logger   *log.Logger
@@ -27,7 +27,7 @@ creates and returns a new node
 func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddr.String())
-	//raftConfig.Logger = log.New(Logger, "", 0)
+	//raftConfig.Logger = log.New(logger, "", 0)
 
 	metarepo := storage.NewInMemoryStorageRepository()
 	dnsrepo := storage.NewInMemoryDNSStorageRepository()
@@ -70,7 +70,7 @@ func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
 		logger.Print("bootstrapping cluster")
 	}
 	return &Node{
-		config:   config,
+		Config:   config,
 		RaftNode: raftNode,
 		logger:   logger,
 		Fsm:      fsm,
@@ -118,7 +118,7 @@ func NewInMemNodeForTesting(config *cfg.Config, logger *log.Logger) (*Node, erro
 		logger.Print("bootstrapping cluster")
 	}
 	return &Node{
-		config:   config,
+		Config:   config,
 		RaftNode: raftNode,
 		logger:   logger,
 		Fsm:      fsm,
@@ -132,8 +132,10 @@ func newTransport(config *cfg.Config, logger *log.Logger) (*raft.NetworkTranspor
 	if err != nil {
 		return nil, err
 	}
-	//Logger statt stdout
-	transport, err := raft.NewTCPTransport(address.String(), config.HttpAddr, 3, 10*time.Second, os.Stdout)
+
+	//TODO Logger statt stdout
+	transport, err := raft.NewTCPTransport(address.String(), nil, 3, 10*time.Second, os.Stdout)
+
 	if err != nil {
 		return nil, err
 	}

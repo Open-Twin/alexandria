@@ -7,12 +7,14 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"sync"
 )
 
 
 type Fsm struct{
 	MetadataRepo *storage.InMemoryStorageRepository
 	DnsRepo *storage.StorageRepository
+	snapMutex sync.RWMutex
 }
 
 // Apply log is invoked once a log entry is committed.
@@ -109,23 +111,26 @@ func applyToDnsStore(fsm *Fsm, e storage.Dnsresource) error {
 // the FSM should be implemented in a fashion that allows for concurrent
 // updates while a snapshot is happening.
 func (fsm *Fsm) Snapshot() (raft.FSMSnapshot, error) {
-	/*fsm.mutex.Lock()
-	defer fsm.mutex.Unlock()
+	fsm.snapMutex.Lock()
+	defer fsm.snapMutex.Unlock()
 
-	return &fsmSnapshot{StateValue: fsm.stateValue}, nil*/
-	return nil,nil
+	return &fsmSnapshot{
+		MetadataRepo: fsm.MetadataRepo,
+		DnsRepo: fsm.DnsRepo,
+	}, nil
 }
 
 // Restore is used to restore an FSM from a snapshot. It is not called
 // concurrently with any other command. The FSM must discard all previous
 // state.
 func (fsm *Fsm) Restore(serialized io.ReadCloser) error {
-	/*var snapshot fsmSnapshot
+	var snapshot fsmSnapshot
 	if err := json.NewDecoder(serialized).Decode(&snapshot); err != nil {
 		return err
 	}
-
-	fsm.stateValue = snapshot.StateValue
-	return nil*/
+	fsm.snapMutex.Lock()
+	defer fsm.snapMutex.Unlock()
+	fsm.DnsRepo = snapshot.DnsRepo
+	fsm.MetadataRepo = snapshot.MetadataRepo
 	return nil
 }
