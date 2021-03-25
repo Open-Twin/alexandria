@@ -10,3 +10,5 @@ services:
     working_dir: /go/src/go-with-compose
     command: go run ./cmd/
     env_file: ../cfg/config.env
+    ports:
+    - "8000:8000"

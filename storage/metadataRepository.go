@@ -23,17 +23,18 @@ type MetadataRepository interface {
 // Creating a structure for the Metadata containing the necessary variables
 type InMemoryStorageRepository struct {
 	// Global Metadata variable for this class
-	Metadata map[service]map[ip]map[key]value
+	Metadata map[service]map[Ip]map[key]value
 	// Creating a mutex onto the Metadata variable in order to handle threads
 	metadataMu sync.RWMutex
 }
 
 func NewInMemoryStorageRepository() *InMemoryStorageRepository {
-	 metadata := make(map[service]map[ip]map[key]value)
-	 return &InMemoryStorageRepository{
-	 	Metadata: metadata,
-	 }
+	metadata := make(map[service]map[Ip]map[key]value)
+	return &InMemoryStorageRepository{
+		Metadata: metadata,
+	}
 }
+
 // Adding the exists function, which basically just checks if an entry for this specific service exists
 func (imsp *InMemoryStorageRepository) Exists(service, ip, key string) bool {
 	imsp.metadataMu.RLock()
@@ -50,7 +51,7 @@ func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) er
 		imsp.metadataMu.Unlock()
 	} else {
 		imsp.metadataMu.Lock()
-		imsp.Metadata[service]=make(map[string]map[string]string)
+		imsp.Metadata[service] = make(map[string]map[string]string)
 		imsp.Metadata[service][ip] = make(map[string]string)
 		imsp.Metadata[service][ip][key] = value
 		imsp.metadataMu.Unlock()
@@ -60,7 +61,6 @@ func (imsp *InMemoryStorageRepository) Create(service, ip, key, value string) er
 	}
 	return nil
 }
-
 
 // Adding the read function, which basically just returns the specific value of the given service as a string
 func (imsp *InMemoryStorageRepository) Read(service, ip, key string) (string, error) {
@@ -83,7 +83,7 @@ func (imsp *InMemoryStorageRepository) Update(service, ip, key, value string) er
 		imsp.metadataMu.Lock()
 		imsp.Metadata[service][ip][key] = value
 		defer imsp.metadataMu.Unlock()
-	}else {
+	} else {
 		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 	}
 	return nil
@@ -95,7 +95,7 @@ func (imsp *InMemoryStorageRepository) Delete(service, ip, key string) error {
 		imsp.metadataMu.Lock()
 		delete(imsp.Metadata[service][ip], key)
 		imsp.metadataMu.Unlock()
-	}else {
+	} else {
 		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong")
 	}
 	return nil

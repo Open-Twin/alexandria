@@ -17,10 +17,10 @@ func createMetadataResponse(service, key, etype, value string) []byte{
 		"Value": value,
 	}
 	response := struct {
-		Service string
-		Type string
-		Key string
-		Value map[string]string
+		Service string `bson:"Service"`
+		Type string `bson:"Type"`
+		Key string `bson:"Key"`
+		Value map[string]string `bson:"Value"`
 	}{
 		Service: service,
 		Type: "response",
@@ -28,7 +28,7 @@ func createMetadataResponse(service, key, etype, value string) []byte{
 		Value: valueMap,
 	}
 
-	responseBytes, err := json.Marshal(response)
+	responseBytes, err := bson.Marshal(response)
 	if err != nil {
 		log.Print("sendresponse failed")
 	}

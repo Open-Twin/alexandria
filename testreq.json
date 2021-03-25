@@ -1,0 +1,7 @@
+{
+  "service": "temperature",
+  "ip": "1.2.3.4",
+  "type": "store",
+  "key": "toilet",
+  "value": "100C"
+}

@@ -1,9 +1,8 @@
-package dns_test
+package communication
 
 import (
-	"fmt"
+	"bufio"
 	"github.com/Open-Twin/alexandria/cfg"
-	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/raft"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -20,11 +19,10 @@ func TestMain(m *testing.M) {
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 7000,
 	}
-
-	httpaddr := net.TCPAddr{
+	/*httpaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 8000,
-	}
+	}*/
 	metaaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 20000,
@@ -33,12 +31,10 @@ func TestMain(m *testing.M) {
 		IP: net.ParseIP("127.0.0.1"),
 		Port: 10000,
 	}
-
 	joinaddr := &net.TCPAddr{
 		IP: net.ParseIP("1.2.3.4"),
 		Port: 8000,
 	}
-
 	conf := cfg.Config{
 		Hostname: "adin carik",
 		LogLevel: 1,
@@ -47,7 +43,6 @@ func TestMain(m *testing.M) {
 		Autojoin: false,
 		HealthcheckInterval: 2000,
 		RaftAddr: raftaddr,
-		HttpAddr: httpaddr,
 		MetaApiAddr: metaaddr,
 		DnsApiAddr: dnsaddr,
 		JoinAddr: joinaddr,
@@ -56,25 +51,10 @@ func TestMain(m *testing.M) {
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
-	/*s := communication.HttpServer{
-		Node: node,
-		Address: httpaddr,
-		Logger: logger,
-	}
-	go s.Start()*/
-
-	//dns entrypoint
-	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	dnsEntrypoint := &communication.DnsEntrypoint{
-		Node: node,
-		Address: conf.HttpAddr,
-		Logger: &dnsEntrypointLogger,
-	}
-	dnsEntrypoint.Start()
 
 	//dns api
 	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
-	dnsApi := &communication.API{
+	dnsApi := &API{
 		Node: node,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
@@ -82,101 +62,94 @@ func TestMain(m *testing.M) {
 		NetworkType: "udp",
 		Logger: &dnsApiLogger,
 	}
-	go dnsApi.Start()
+	dnsApi.Start()
+
+	/*var s = &HttpServer{
+		Node:    node,
+		Address: httpaddr,
+		Logger:  logger,
+	}
+	go s.Start()*/
+
+
 	time.Sleep(5 * time.Second)
 	code := m.Run()
 	os.Exit(code)
 }
 
 type answerFormat struct {
-	Domain string
-	Error string
-	Value string
+	Service string `bson:"Service"`
+	Type string	`bson:"Type"`
+	Key string `bson:"Key"`
+	Value map[string]string `bson:"Value"`
 }
 
 func SendBsonMessage(address string, msg bson.M) []byte {
 	conn, err := net.Dial("udp", address)
 	defer conn.Close()
 	if err != nil {
-		fmt.Printf("Error on establishing connection: %s\n", err)
+		log.Printf("Error on establishing connection: %s\n", err)
 	}
-	sendMsg, _ := bson.Marshal(msg)
+	sendMsg, err := bson.Marshal(msg)
 
 	conn.Write(sendMsg)
-	fmt.Printf("Message sent: %s\n", sendMsg)
 
 	answer := make([]byte, 2048)
-	_, err = conn.Read(answer)
-
+	_, err = bufio.NewReader(conn).Read(answer)
 	if err != nil {
-		fmt.Printf("Error on receiving answer: %v", err.Error())
-	} else {
-		fmt.Printf("Answer:\n%s\n", answer)
+		log.Printf("Error on receiving answer: %v", err)
 	}
-
 	return answer
 }
 
-func TestStoreEntry(t *testing.T) {
+func TestStoreEntryShouldPass(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "dejan.ac.at",
-		"Ip" : "1.2.3.4",
-		"RequestType" : "store",
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "store",
+		"key" : "voltage",
+		"value" : "3",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage("127.0.0.1:20000",msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
-	if answerVals.Error != "ok" {
+	log.Print(answerVals)
+	if answerVals.Value["Type"] != "ok" {
 		t.Errorf("Store failed: %s", ans)
 	}
 }
 
-func TestUpdateEntry(t *testing.T) {
+func TestUpdateEntryShouldPass(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "dejan.ac.at",
-		"Ip" : "1.2.3.4",
-		"RequestType" : "update",
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "update",
+		"key" : "voltage",
+		"value" : "5",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage("127.0.0.1:20000",msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
-	if answerVals.Error != "ok" {
+	if answerVals.Value["Type"] != "ok" {
 		t.Errorf("Update failed: %s", ans)
 	}
 }
 
-func TestDeleteEntry(t *testing.T) {
+func TestDeleteEntryShouldPass(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "dejan.ac.at",
-		"Ip" : "1.2.3.4",
-		"RequestType" : "delete",
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "delete",
+		"key" : "voltage",
+		"value" : "5",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage("127.0.0.1:20000",msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
-	if answerVals.Error != "ok" {
+	if answerVals.Value["Type"] != "ok" {
 		t.Errorf("Delete failed: %s", ans)
 	}
 }
-
-/*func TestQuery(t *testing.T) {
-	msg := bson.M{
-		"Hostname": "www.ariel.dna",
-		"Ip" : "2.4.8.10",
-		"RequestType" : "store",
-	}
-	SendBsonMessage("127.0.0.1:10000",msg)
-
-	ips, err := net.LookupIP("www.ariel.dna")
-	if err != nil {
-		t.Error(err)
-	}
-	if len(ips) < 1 {
-		t.Errorf("No ip returned.")
-	} else if !reflect.DeepEqual(ips[0], net.IP{2, 4, 8, 10}) {
-		t.Errorf("Got wrong IP: %s", ips[0])
-	}
-}*/

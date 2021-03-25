@@ -2,11 +2,13 @@ package raft
 
 import (
 	"encoding/json"
+	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 )
 
 type fsmSnapshot struct {
-	StateValue int `json:"value"`
+	MetadataRepo *storage.InMemoryStorageRepository
+	DnsRepo *storage.StorageRepository
 }
 // Persist should dump all necessary state to the WriteCloser 'sink',
 // and call sink.Close() when finished or call sink.Cancel() on error.

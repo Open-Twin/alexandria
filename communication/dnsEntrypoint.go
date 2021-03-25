@@ -9,11 +9,11 @@ import (
 
 type DnsEntrypoint struct {
 	Node    *raft.Node
-	Address net.Addr
+	Address net.TCPAddr
 	Logger  *log.Logger
 }
 
-func (api *DnsEntrypoint) StartDnsEntrypoint(){
+func (api *DnsEntrypoint) Start(){
 	udpserver := UDPServer{
 		Address: []byte{0,0,0,0},
 		Port: 53,
