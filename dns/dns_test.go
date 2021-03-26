@@ -15,47 +15,49 @@ import (
 	"testing"
 	"time"
 )
+
 const apiAddr = "127.0.0.1"
 const apiPort = 10001
 const entrypointAddr = "127.0.0.1"
 const entrypointPort = 10002
+
 func TestMain(m *testing.M) {
-	logger := log.New(os.Stdout,"",log.Ltime)
+	logger := log.New(os.Stdout, "", log.Ltime)
 
 	raftaddr := net.TCPAddr{
-		IP: net.ParseIP("127.0.0.1"),
+		IP:   net.ParseIP("127.0.0.1"),
 		Port: 7001,
 	}
 
 	httpaddr := net.TCPAddr{
-		IP: net.ParseIP("127.0.0.1"),
+		IP:   net.ParseIP("127.0.0.1"),
 		Port: 8001,
 	}
 	dnsaddr := net.TCPAddr{
-		IP: net.ParseIP(entrypointAddr),
+		IP:   net.ParseIP(entrypointAddr),
 		Port: entrypointPort,
 	}
 	dnsapiaddr := net.TCPAddr{
 
-		IP: net.ParseIP(apiAddr),
+		IP:   net.ParseIP(apiAddr),
 		Port: apiPort,
 	}
 
 	conf := cfg.Config{
-		Hostname: "adin carik",
-		LogLevel: 1,
-		DataDir: "raft/test",
-		Bootstrap: true,
-		Autojoin: false,
+		Hostname:            "adin carik",
+		LogLevel:            1,
+		DataDir:             "raft/test",
+		Bootstrap:           true,
+		Autojoin:            false,
 		HealthcheckInterval: 2000,
-		RaftAddr: raftaddr,
-		HttpAddr: httpaddr,
-		DnsApiAddr: dnsapiaddr,
-		DnsAddr: dnsaddr,
+		RaftAddr:            raftaddr,
+		HttpAddr:            httpaddr,
+		DnsApiAddr:          dnsapiaddr,
+		DnsAddr:             dnsaddr,
 	}
 	node, err := raft.NewInMemNodeForTesting(&conf, logger)
-	if err != nil{
-		log.Fatal("Preparing tests failed: "+err.Error())
+	if err != nil {
+		log.Fatal("Preparing tests failed: " + err.Error())
 	}
 	/*s := communication.HttpServer{
 		Node: node,
@@ -65,23 +67,23 @@ func TestMain(m *testing.M) {
 	go s.Start()*/
 
 	//dns entrypoint
-	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
+	dnsEntrypointLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
-		Node: node,
+		Node:    node,
 		Address: conf.DnsAddr,
-		Logger: &dnsEntrypointLogger,
+		Logger:  &dnsEntrypointLogger,
 	}
 	dnsEntrypoint.Start()
 
 	//dns api
-	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
+	dnsApiLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
 	dnsApi := &communication.API{
 		Node: node,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
-		DNSAddress: conf.DnsApiAddr,
+		DNSAddress:  conf.DnsApiAddr,
 		NetworkType: "udp",
-		Logger: &dnsApiLogger,
+		Logger:      &dnsApiLogger,
 	}
 	go dnsApi.Start()
 	time.Sleep(5 * time.Second)
@@ -92,8 +94,8 @@ func TestMain(m *testing.M) {
 
 type answerFormat struct {
 	Domain string
-	Error string
-	Value string
+	Error  string
+	Value  string
 }
 
 func SendBsonMessage(address string, msg bson.M) []byte {
@@ -121,12 +123,12 @@ func SendBsonMessage(address string, msg bson.M) []byte {
 
 func TestStoreEntry(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "dejan.ac.at",
-		"Ip" : "1.2.3.4",
-		"RequestType" : "store",
+		"Hostname":    "dejan.ac.at",
+		"Ip":          "1.2.3.4",
+		"RequestType": "store",
 	}
 
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -136,12 +138,12 @@ func TestStoreEntry(t *testing.T) {
 
 func TestUpdateEntry(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "dejan.ac.at",
-		"Ip" : "1.2.3.4",
-		"RequestType" : "update",
+		"Hostname":    "dejan.ac.at",
+		"Ip":          "1.2.3.4",
+		"RequestType": "update",
 	}
 
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -151,12 +153,12 @@ func TestUpdateEntry(t *testing.T) {
 
 func TestDeleteEntry(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "dejan.ac.at",
-		"Ip" : "1.2.3.4",
-		"RequestType" : "delete",
+		"Hostname":    "dejan.ac.at",
+		"Ip":          "1.2.3.4",
+		"RequestType": "delete",
 	}
 
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -166,27 +168,17 @@ func TestDeleteEntry(t *testing.T) {
 
 func TestQuery(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "www.ariel.dna",
-		"Ip" : "2.4.8.10",
-		"RequestType" : "store",
+		"Hostname":    "www.ariel.dna",
+		"Ip":          "2.4.8.10",
+		"RequestType": "store",
 	}
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
 	log.Printf("Storing ariel: %s", ans)
 
-	r := &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{
-				Timeout: time.Millisecond * time.Duration(5000),
-			}
-			return d.DialContext(ctx, network, entrypointAddr + ":" + strconv.Itoa(entrypointPort))
-		},
-	}
-	ips, err := r.LookupIP(context.Background(), "ip", "www.ariel.dna")
+	ips, err := sendDig("www.ariel.dna", entrypointAddr+":"+strconv.Itoa(entrypointPort))
 	if err != nil {
 		t.Error(err)
 	}
-
 	if len(ips) < 1 {
 		t.Errorf("No ip returned.")
 	} else if !reflect.DeepEqual(ips[0], net.IP{2, 4, 8, 10}) {
@@ -196,35 +188,40 @@ func TestQuery(t *testing.T) {
 
 func TestDnsNodeDistribution(t *testing.T) {
 	msg := bson.M{
-		"Hostname": "eenie.meenie",
-		"Ip" : "1.1.1.1",
-		"RequestType" : "store",
+		"Hostname":    "eenie.meenie",
+		"Ip":          "1.1.1.1",
+		"RequestType": "store",
 	}
-	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
-	ip, _ := net.LookupIP("eenie.meenie")
-	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 1}) {
-		t.Errorf("Wrong IP returned by loadbalancer: %s", ip)
+	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
+	ip, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
+	if len(ip) < 1 {
+		t.Errorf("No ip returned.")
+	}
+	if !reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 1}) {
+		t.Errorf("Loadbalancer returned %s instead of 1.1.1.2", ip)
 	}
 
 	msg = bson.M{
-		"Hostname": "eenie.meenie",
-		"Ip" : "1.1.1.2",
-		"RequestType" : "store",
+		"Hostname":    "eenie.meenie",
+		"Ip":          "1.1.1.2",
+		"RequestType": "store",
 	}
-	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
-	ip, _ = net.LookupIP("eenie.meenie")
+	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
+	ip, _ = sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
 	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 2}) {
-		t.Errorf("Wrong IP returned by loadbalancer: %s", ip)
+		t.Errorf("Loadbalancer returned %s instead of 1.1.1.2", ip)
 	}
+}
 
-	msg = bson.M{
-		"Hostname": "eenie.meenie",
-		"Ip" : "1.1.1.3",
-		"RequestType" : "store",
+func sendDig(hostname string, dnsip string) ([]net.IP, error) {
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * time.Duration(5000),
+			}
+			return d.DialContext(ctx, network, dnsip)
+		},
 	}
-	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
-	ip, _ = net.LookupIP("eenie.meenie")
-	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 3}) {
-		t.Errorf("Wrong IP returned by loadbalancer: %s", ip)
-	}
+	return r.LookupIP(context.Background(), "ip", hostname)
 }
