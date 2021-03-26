@@ -44,10 +44,10 @@ func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 
 	answer := dns.CreateAnswer(pdu, requestedRecords, api.Logger, buf)
 
-	log.Printf("Answer Header: %s\n", answer.Header)
-	log.Printf("Answer Flags: %s\n", answer.Flags)
-	log.Printf("Answer Answer Resource Records: %s\n", answer.AnswerResourceRecords)
-	log.Printf("Answer Additional Resource Records: %s\n", answer.AdditionalResourceRecords)
+	log.Printf("Answer Header: %v\n", answer.Header)
+	log.Printf("Answer Flags: %v\n", answer.Flags)
+	log.Printf("Answer Answer Resource Records: %v\n", answer.AnswerResourceRecords)
+	log.Printf("Answer Additional Resource Records: %v\n", answer.AdditionalResourceRecords)
 	log.Println("-------------------answer end-------------------")
 	return dns.PrepareToSend(answer)
 }

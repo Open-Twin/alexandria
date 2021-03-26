@@ -12,8 +12,10 @@ services:
     env_file: leader_config.env
     ports:
     - "8000:8000"
-    - "10000:10000"
-    - "20000:20000"
+    - "10000:10000/udp"
+    - "20000:20000/udp"
+    - "53:53/tcp"
+    - "53:53/udp"
     networks:
       front:
         ipv4_address: 10.5.0.2
@@ -28,8 +30,10 @@ services:
     - leader
     ports:
     - "8001:8000"
-    - "10001:10000"
-    - "20001:20000"
+    - "10001:10000/udp"
+    - "20001:20000/udp"
+    - "54:53/tcp"
+    - "54:53/udp"    
     networks:
       front:
         ipv4_address: 10.5.0.3
@@ -44,8 +48,10 @@ services:
     - leader
     ports:
     - "8002:8000"
-    - "10002:10000"
-    - "20002:20000"
+    - "10002:10000/udp"
+    - "20002:20000/udp"
+    - "55:53/tcp"
+    - "55:53/udp"
     networks:
       front:
         ipv4_address: 10.5.0.4
