@@ -30,7 +30,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	go lb.startSignupEndpoint()
 
 	hc := HealthCheck{
-		Nodes:     &lb.nodes,
+		Nodes:     lb.nodes,
 		Interval:  lb.HealthCheckInterval,
 		CheckType: HttpCheck,
 	}

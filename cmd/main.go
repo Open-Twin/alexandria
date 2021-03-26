@@ -15,11 +15,11 @@ func main() {
 	conf := cfg.ReadConf()
 	log.Print("Config: ")
 	log.Print(conf)
-	raftLogger := log.New(os.Stdout,"raft: ",log.Ltime)
+	raftLogger := log.New(os.Stdout, "raft: ", log.Ltime)
 
 	raftNode, err := raft.Start(&conf, raftLogger)
 
-	if err != nil{
+	if err != nil {
 		raftLogger.Println("error creating node. EXITING")
 		os.Exit(1)
 	}
@@ -28,9 +28,9 @@ func main() {
 	//dns entrypoint
 	dnsEntrypointLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
-		Node: raftNode,
+		Node:    raftNode,
 		Address: conf.DnsAddr,
-		Logger: &dnsEntrypointLogger,
+		Logger:  &dnsEntrypointLogger,
 	}
 	raftLogger.Println("Starting DNS entrypoint")
 	dnsEntrypoint.Start()
@@ -41,7 +41,7 @@ func main() {
 		Node: raftNode,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
-		DNSAddress: conf.DnsApiAddr,
+		DNSAddress:  conf.DnsApiAddr,
 		NetworkType: "udp",
 		Logger:      &apiLogger,
 	}
@@ -49,7 +49,7 @@ func main() {
 	api.Start()
 
 	healthchecks := loadbalancing.HealthCheck{
-		Nodes:     &raftNode.Fsm.DnsRepo.LbInfo,
+		Nodes:     raftNode.Fsm.DnsRepo.LbInfo,
 		Interval:  30 * 1000,
 		CheckType: loadbalancing.PingCheck,
 	}

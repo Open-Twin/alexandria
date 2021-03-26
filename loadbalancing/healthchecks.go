@@ -17,7 +17,7 @@ type NodeHealth struct {
 }
 
 type HealthCheck struct {
-	Nodes     *map[storage.Ip]dns.NodeHealth
+	Nodes     map[storage.Ip]dns.NodeHealth
 	Interval  int
 	CheckType CheckType
 }
@@ -40,14 +40,15 @@ func (hc *HealthCheck) ScheduleHealthChecks() {
 
 func (hc *HealthCheck) loopNodes() {
 	log.Printf("Running healthchecks")
-	for ip := range *hc.Nodes {
-		node := (*hc.Nodes)[ip]
+	log.Printf("%v", hc.Nodes)
+	for ip := range hc.Nodes {
+		node := hc.Nodes[ip]
 		if hc.CheckType == HttpCheck {
 			sendHttpCheck(ip, &node)
 		} else if hc.CheckType == PingCheck {
 			sendPingCheck(ip, &node)
 		}
-		(*hc.Nodes)[ip] = node
+		hc.Nodes[ip] = node
 	}
 }
 
