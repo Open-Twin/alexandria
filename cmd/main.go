@@ -29,7 +29,7 @@ func main() {
 	dnsEntrypointLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node: raftNode,
-		Address: conf.HttpAddr,
+		Address: conf.DnsAddr,
 		Logger: &dnsEntrypointLogger,
 	}
 	raftLogger.Println("Starting DNS entrypoint")
@@ -56,7 +56,7 @@ func main() {
 	raftLogger.Println("Starting healthchecks")
 	healthchecks.ScheduleHealthChecks()
 
-	loadbalancing.StartLoadReporting()
+	//loadbalancing.StartLoadReporting()
 
 	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{

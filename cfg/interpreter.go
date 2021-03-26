@@ -205,7 +205,7 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 	dnsAddress := net.ParseIP(rawConfig.DnsAddr)
 	dnsAddr := net.TCPAddr{
 		IP: dnsAddress,
-		Port: rawConfig.DnsApiPort,
+		Port: rawConfig.DnsPort,
 	}
 	//join address
 	var joinAddr net.Addr

@@ -29,9 +29,10 @@ func (server *HttpServer) Start() {
 	go startAutojoinListener(server.UdpPort)
 	server.Logger.Printf("Starting server with Address %v\n", server.Address.String())
 	if err := http.ListenAndServe(server.Address.String(), server); err != nil {
-		server.Logger.Fatal("Error running HTTP server")
+		server.Logger.Fatalf("Error running HTTP server, Error: %v", err)
 	}
 }
+
 func startAutojoinListener(port int){
 	//TODO: use udp endpoint
 	log.Print("PORT:"+strconv.Itoa(port))
