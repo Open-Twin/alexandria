@@ -22,11 +22,13 @@ type rawConfig struct {
 	JoinAddr	string `validate:"required,ipv4"`
 	MetaApiAddr	string `validate:"required,ipv4"`
 	DnsApiAddr	string `validate:"required,ipv4"`
+	DnsAddr		string `validate:"required,ipv4"`
 	HttpPort    int `validate:"required,max=65536,min=1" default:"5"`
 	RaftPort    int `validate:"required,max=65536,min=1"`
 	MetaApiPort int `validate:"required,max=65536,min=1"`
 	DnsApiPort	int `validate:"required,max=65536,min=1"`
 	UdpPort		int `validate:"required,max=65536,min=1"`
+	DnsPort		int `validate:"required,max=65536,min=1"`
 }
 
 type Config struct {
@@ -41,6 +43,7 @@ type Config struct {
 	JoinAddr	net.Addr
 	MetaApiAddr net.TCPAddr
 	DnsApiAddr net.TCPAddr
+	DnsAddr		net.TCPAddr
 	UdpPort		int
 }
 
@@ -59,12 +62,14 @@ func ReadConf() Config {
 		RAFT_ADDR     = "RAFT_ADDR"
 		JOIN_ADDR     = "JOIN_ADDR"
 		META_ADDR     = "META_API_ADDR"
-		DNS_ADDR     = "DNS_API_ADDR"
+		DNS_API_ADDR     = "DNS_API_ADDR"
+		DNS_ADDR = "DNS_ADDR"
 		HTTP_PORT     = "HTTP_PORT"
 		RAFT_PORT     = "RAFT_PORT"
 		DNS_API_PORT  = "DNS_API_PORT"
 		META_API_PORT = "META_API_PORT"
 		UDP_PORT	  = "UDP_PORT"
+		DNS_PORT	  = "DNS_PORT"
 	)
 
 	cfg := rawConfig{}
@@ -105,7 +110,9 @@ func ReadConf() Config {
 
 	cfg.MetaApiAddr = os.Getenv(META_ADDR)
 
-	cfg.DnsApiAddr = os.Getenv(DNS_ADDR)
+	cfg.DnsApiAddr = os.Getenv(DNS_API_ADDR)
+
+	cfg.DnsAddr = os.Getenv(DNS_ADDR)
 
 	httpPort, errHttp := strconv.Atoi(os.Getenv(HTTP_PORT))
 	if errHttp != nil {
@@ -125,17 +132,23 @@ func ReadConf() Config {
 	}
 	cfg.MetaApiPort = metaPort
 
-	dnsPort, errPort := strconv.Atoi(os.Getenv(DNS_API_PORT))
+	dnsApiPort, errPort := strconv.Atoi(os.Getenv(DNS_API_PORT))
 	if errPort != nil {
-		dnsPort = -1
+		dnsApiPort = -1
 	}
-	cfg.DnsApiPort = dnsPort
+	cfg.DnsApiPort = dnsApiPort
 
 	udpPort, errUdp := strconv.Atoi(os.Getenv(UDP_PORT))
 	if errUdp != nil {
 		udpPort = -1
 	}
 	cfg.UdpPort = udpPort
+
+	dnsPort, errUdp := strconv.Atoi(os.Getenv(DNS_PORT))
+	if errUdp != nil {
+		dnsPort = -1
+	}
+	cfg.DnsPort = dnsPort
 
 	validatedCfg, errs := validateConfig(cfg)
 	for err := range errs {
@@ -184,7 +197,12 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 		IP: metaAddress,
 		Port: rawConfig.MetaApiPort,
 	}
-	dnsAddress := net.ParseIP(rawConfig.DnsApiAddr)
+	dnsApiAddress := net.ParseIP(rawConfig.DnsApiAddr)
+	dnsApiAddr := net.TCPAddr{
+		IP: dnsApiAddress,
+		Port: rawConfig.DnsApiPort,
+	}
+	dnsAddress := net.ParseIP(rawConfig.DnsAddr)
 	dnsAddr := net.TCPAddr{
 		IP: dnsAddress,
 		Port: rawConfig.DnsApiPort,
@@ -210,7 +228,8 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 		HttpAddr: httpAddr,
 		RaftAddr: raftAddr,
 		MetaApiAddr: metaAddr,
-		DnsApiAddr: dnsAddr,
+		DnsApiAddr: dnsApiAddr,
+		DnsAddr: dnsAddr,
 		JoinAddr: joinAddr,
 		UdpPort: rawConfig.UdpPort,
 	}
@@ -229,12 +248,14 @@ const (
 	HttpAddr = "127.0.0.1"
 	RaftAddr = "127.0.0.1"
 	MetaApiAddr = "0.0.0.0"
+	DnsAddr = "0.0.0.0"
 	DnsApiAddr = "0.0.0.0"
 	JoinAddr = ""
 	HttpPort = 8000
 	RaftPort = 7000
 	MetaApiPort = 20000
 	DnsApiPort = 10000
+	DnsPort = 53
 	UdpPort  = 9000
 )
 
@@ -279,6 +300,9 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 	case "DnsApiAddr":
 		log.Printf("Using default value for %s istead: %s\n", "DnsApiAddr", DnsApiAddr)
 		conf.DnsApiAddr = DnsApiAddr
+	case "DnsAddr":
+		log.Printf("Using default value for %s istead: %s\n", "DnsApiAddr", DnsAddr)
+		conf.DnsAddr = DnsAddr
 	case "JoinAddr":
 		log.Printf("Using default value for %s istead: %s\n", "JoinAddr", JoinAddr)
 		conf.JoinAddr = JoinAddr
@@ -294,6 +318,9 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 	case "DnsApiPort":
 		log.Printf("Using default value for %s istead: %v\n", "DnsApiPort", DnsApiPort)
 		conf.DnsApiPort = DnsApiPort
+	case "DnsPort":
+		log.Printf("Using default value for %s istead: %v\n", "DnsApiPort", DnsPort)
+		conf.DnsPort = DnsPort
 	case "UdpPort":
 		log.Printf("Using default value for %s istead: %v\n", "UdpPort", UdpPort)
 		conf.UdpPort = UdpPort

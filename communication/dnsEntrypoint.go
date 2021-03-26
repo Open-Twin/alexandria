@@ -15,12 +15,12 @@ type DnsEntrypoint struct {
 
 func (api *DnsEntrypoint) Start(){
 	udpserver := UDPServer{
-		Address: []byte{0,0,0,0},
-		Port: 53,
+		Address: api.Address.IP,
+		Port: api.Address.Port,
 	}
 	tcpserver := TCPServer{
-		Address: []byte{0,0,0,0},
-		Port: 53,
+		Address: api.Address.IP,
+		Port: api.Address.Port,
 	}
 
 	log.Println("Starting DNS entrypoint")

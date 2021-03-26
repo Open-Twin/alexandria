@@ -1,6 +1,7 @@
 package dns_test
 
 import (
+	"context"
 	"fmt"
 	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
@@ -9,34 +10,35 @@ import (
 	"log"
 	"net"
 	"os"
+	"reflect"
+	"strconv"
 	"testing"
 	"time"
 )
-
+const apiAddr = "127.0.0.1"
+const apiPort = 10001
+const entrypointAddr = "127.0.0.1"
+const entrypointPort = 10002
 func TestMain(m *testing.M) {
 	logger := log.New(os.Stdout,"",log.Ltime)
 
 	raftaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 7000,
+		Port: 7001,
 	}
 
 	httpaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
-		Port: 8000,
-	}
-	metaaddr := net.TCPAddr{
-		IP: net.ParseIP("127.0.0.1"),
-		Port: 20000,
+		Port: 8001,
 	}
 	dnsaddr := net.TCPAddr{
-		IP: net.ParseIP("127.0.0.1"),
-		Port: 10000,
+		IP: net.ParseIP(entrypointAddr),
+		Port: entrypointPort,
 	}
+	dnsapiaddr := net.TCPAddr{
 
-	joinaddr := &net.TCPAddr{
-		IP: net.ParseIP("1.2.3.4"),
-		Port: 8000,
+		IP: net.ParseIP(apiAddr),
+		Port: apiPort,
 	}
 
 	conf := cfg.Config{
@@ -48,9 +50,8 @@ func TestMain(m *testing.M) {
 		HealthcheckInterval: 2000,
 		RaftAddr: raftaddr,
 		HttpAddr: httpaddr,
-		MetaApiAddr: metaaddr,
-		DnsApiAddr: dnsaddr,
-		JoinAddr: joinaddr,
+		DnsApiAddr: dnsapiaddr,
+		DnsAddr: dnsaddr,
 	}
 	node, err := raft.NewInMemNodeForTesting(&conf, logger)
 	if err != nil{
@@ -67,7 +68,7 @@ func TestMain(m *testing.M) {
 	dnsEntrypointLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node: node,
-		Address: conf.HttpAddr,
+		Address: conf.DnsAddr,
 		Logger: &dnsEntrypointLogger,
 	}
 	dnsEntrypoint.Start()
@@ -84,6 +85,7 @@ func TestMain(m *testing.M) {
 	}
 	go dnsApi.Start()
 	time.Sleep(5 * time.Second)
+
 	code := m.Run()
 	os.Exit(code)
 }
@@ -124,7 +126,7 @@ func TestStoreEntry(t *testing.T) {
 		"RequestType" : "store",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -139,7 +141,7 @@ func TestUpdateEntry(t *testing.T) {
 		"RequestType" : "update",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -154,7 +156,7 @@ func TestDeleteEntry(t *testing.T) {
 		"RequestType" : "delete",
 	}
 
-	ans := SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -162,21 +164,67 @@ func TestDeleteEntry(t *testing.T) {
 	}
 }
 
-/*func TestQuery(t *testing.T) {
+func TestQuery(t *testing.T) {
 	msg := bson.M{
 		"Hostname": "www.ariel.dna",
 		"Ip" : "2.4.8.10",
 		"RequestType" : "store",
 	}
-	SendBsonMessage("127.0.0.1:10000",msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	log.Printf("Storing ariel: %s", ans)
 
-	ips, err := net.LookupIP("www.ariel.dna")
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * time.Duration(5000),
+			}
+			return d.DialContext(ctx, network, entrypointAddr + ":" + strconv.Itoa(entrypointPort))
+		},
+	}
+	ips, err := r.LookupIP(context.Background(), "ip", "www.ariel.dna")
 	if err != nil {
 		t.Error(err)
 	}
+
 	if len(ips) < 1 {
 		t.Errorf("No ip returned.")
 	} else if !reflect.DeepEqual(ips[0], net.IP{2, 4, 8, 10}) {
 		t.Errorf("Got wrong IP: %s", ips[0])
 	}
-}*/
+}
+
+func TestDnsNodeDistribution(t *testing.T) {
+	msg := bson.M{
+		"Hostname": "eenie.meenie",
+		"Ip" : "1.1.1.1",
+		"RequestType" : "store",
+	}
+	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	ip, _ := net.LookupIP("eenie.meenie")
+	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 1}) {
+		t.Errorf("Wrong IP returned by loadbalancer: %s", ip)
+	}
+
+	msg = bson.M{
+		"Hostname": "eenie.meenie",
+		"Ip" : "1.1.1.2",
+		"RequestType" : "store",
+	}
+	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	ip, _ = net.LookupIP("eenie.meenie")
+	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 2}) {
+		t.Errorf("Wrong IP returned by loadbalancer: %s", ip)
+	}
+
+	msg = bson.M{
+		"Hostname": "eenie.meenie",
+		"Ip" : "1.1.1.3",
+		"RequestType" : "store",
+	}
+	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort),msg)
+	ip, _ = net.LookupIP("eenie.meenie")
+	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 3}) {
+		t.Errorf("Wrong IP returned by loadbalancer: %s", ip)
+	}
+}

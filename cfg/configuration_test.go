@@ -75,12 +75,14 @@ func TestValidateValidConfig(t *testing.T){
 		HttpAddr: "1.2.3.4",
 		MetaApiAddr: "1.2.3.4",
 		DnsApiAddr: "1.2.3.4",
+		DnsAddr: "1.2.3.4",
 		JoinAddr: "1.2.3.4",
 		RaftPort: 7000,
 		HttpPort: 8000,
 		MetaApiPort: 20000,
 		DnsApiPort: 10000,
 		UdpPort: 9000,
+		DnsPort: 53,
 	}
 	_, err := validateConfig(cfg)
 	if err != nil {

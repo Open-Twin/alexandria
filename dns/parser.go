@@ -140,6 +140,7 @@ func parseBody(header DNSHeader, buffer *bytes.Buffer) (DNSPDU, error) {
 		}
 
 		question.Type = binary.BigEndian.Uint16(buffer.Next(2))
+		//TODO: wirft exception
 		question.Class = binary.BigEndian.Uint16(buffer.Next(2))
 
 		questions = append(questions, question)
