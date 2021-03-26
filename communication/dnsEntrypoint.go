@@ -38,16 +38,16 @@ func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 	pdu := dns.HandleRequest(addr, buf)
 	log.Println("-------------------create answer-------------------")
 
-	hostnames := dns.ExtractQuestionHostnames(pdu)
-	log.Printf("HORST: %s", hostnames)
+	hostnames := dns.ExtractQuestionHostnames(&pdu)
 
 	requestedRecords := queryDnsRepo(hostnames, api)
 
 	answer := dns.CreateAnswer(pdu, requestedRecords, api.Logger, buf)
-	log.Println(answer.Header)
-	log.Println(answer.Flags)
-	log.Println(answer.AnswerResourceRecords)
-	log.Println(string(answer.AnswerResourceRecords[0].ResourceData))
+
+	log.Printf("Answer Header: %v\n", answer.Header)
+	log.Printf("Answer Flags: %v\n", answer.Flags)
+	log.Printf("Answer Answer Resource Records: %v\n", answer.AnswerResourceRecords)
+	log.Printf("Answer Additional Resource Records: %v\n", answer.AdditionalResourceRecords)
 	log.Println("-------------------answer end-------------------")
 	return dns.PrepareToSend(answer)
 }
@@ -67,6 +67,7 @@ func queryDnsRepo(hostnames []string, api *DnsEntrypoint) []dns.DNSResourceRecor
 				}
 			}*/
 			log.Printf("Reqeusted domain not available: %s", hostname)
+			return nil
 		}else{
 			array = append(array, query)
 		}
