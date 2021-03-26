@@ -11,40 +11,40 @@ import (
 )
 
 type rawConfig struct {
-	Hostname    string `validate:"required,hostname"`
-	LogLevel    int `validate:"required,max=5,min=1"`
-	DataDir     string `validate:"required,dir"`
-	Bootstrap   bool
-	Autojoin	bool
-	HealthcheckInterval int `validate:"required,min=1000"`
-	HttpAddr    string `validate:"required,ipv4"`
-	RaftAddr    string `validate:"required,ipv4"`
-	JoinAddr	string `validate:"required,ipv4"`
-	MetaApiAddr	string `validate:"required,ipv4"`
-	DnsApiAddr	string `validate:"required,ipv4"`
-	DnsAddr		string `validate:"required,ipv4"`
-	HttpPort    int `validate:"required,max=65536,min=1" default:"5"`
-	RaftPort    int `validate:"required,max=65536,min=1"`
-	MetaApiPort int `validate:"required,max=65536,min=1"`
-	DnsApiPort	int `validate:"required,max=65536,min=1"`
-	UdpPort		int `validate:"required,max=65536,min=1"`
-	DnsPort		int `validate:"required,max=65536,min=1"`
+	Hostname            string `validate:"required,hostname"`
+	LogLevel            int    `validate:"required,max=5,min=1"`
+	DataDir             string `validate:"required,dir"`
+	Bootstrap           bool
+	Autojoin            bool
+	HealthcheckInterval int    `validate:"required,min=1000"`
+	HttpAddr            string `validate:"required,ipv4"`
+	RaftAddr            string `validate:"required,ipv4"`
+	JoinAddr            string `validate:"required,ipv4"`
+	MetaApiAddr         string `validate:"required,ipv4"`
+	DnsApiAddr          string `validate:"required,ipv4"`
+	DnsAddr             string `validate:"required,ipv4"`
+	HttpPort            int    `validate:"required,max=65536,min=1" default:"5"`
+	RaftPort            int    `validate:"required,max=65536,min=1"`
+	MetaApiPort         int    `validate:"required,max=65536,min=1"`
+	DnsApiPort          int    `validate:"required,max=65536,min=1"`
+	UdpPort             int    `validate:"required,max=65536,min=1"`
+	DnsPort             int    `validate:"required,max=65536,min=1"`
 }
 
 type Config struct {
-	Hostname    string
-	LogLevel    int
-	DataDir     string
-	Bootstrap   bool
-	Autojoin	bool
+	Hostname            string
+	LogLevel            int
+	DataDir             string
+	Bootstrap           bool
+	Autojoin            bool
 	HealthcheckInterval int
-	HttpAddr    net.TCPAddr
-	RaftAddr    net.TCPAddr
-	JoinAddr	net.Addr
-	MetaApiAddr net.TCPAddr
-	DnsApiAddr net.TCPAddr
-	DnsAddr		net.TCPAddr
-	UdpPort		int
+	HttpAddr            net.TCPAddr
+	RaftAddr            net.TCPAddr
+	JoinAddr            net.Addr
+	MetaApiAddr         net.TCPAddr
+	DnsApiAddr          net.TCPAddr
+	DnsAddr             net.TCPAddr
+	UdpPort             int
 }
 
 // Reads the configuration from the environment variables.
@@ -52,24 +52,24 @@ type Config struct {
 func ReadConf() Config {
 	// This constant saves the names of the environment variables
 	const (
-		HOSTNAME      = "HOSTNAME"
-		LOG_LEVEL     = "LOG_LEVEL"
-		DATA_DIR      = "DATA_DIR"
-		BOOTSTRAP     = "BOOTSTRAP"
-		AUTO_JOIN     = "AUTO_JOIN"
+		HOSTNAME             = "HOSTNAME"
+		LOG_LEVEL            = "LOG_LEVEL"
+		DATA_DIR             = "DATA_DIR"
+		BOOTSTRAP            = "BOOTSTRAP"
+		AUTO_JOIN            = "AUTO_JOIN"
 		HEALTHCHECK_INTERVAL = "HEALTHCHECK_INTERVAL"
-		HTTP_ADDR     = "HTTP_ADDR"
-		RAFT_ADDR     = "RAFT_ADDR"
-		JOIN_ADDR     = "JOIN_ADDR"
-		META_ADDR     = "META_API_ADDR"
-		DNS_API_ADDR     = "DNS_API_ADDR"
-		DNS_ADDR = "DNS_ADDR"
-		HTTP_PORT     = "HTTP_PORT"
-		RAFT_PORT     = "RAFT_PORT"
-		DNS_API_PORT  = "DNS_API_PORT"
-		META_API_PORT = "META_API_PORT"
-		UDP_PORT	  = "UDP_PORT"
-		DNS_PORT	  = "DNS_PORT"
+		HTTP_ADDR            = "HTTP_ADDR"
+		RAFT_ADDR            = "RAFT_ADDR"
+		JOIN_ADDR            = "JOIN_ADDR"
+		META_ADDR            = "META_API_ADDR"
+		DNS_API_ADDR         = "DNS_API_ADDR"
+		DNS_ADDR             = "DNS_ADDR"
+		HTTP_PORT            = "HTTP_PORT"
+		RAFT_PORT            = "RAFT_PORT"
+		DNS_API_PORT         = "DNS_API_PORT"
+		META_API_PORT        = "META_API_PORT"
+		UDP_PORT             = "UDP_PORT"
+		DNS_PORT             = "DNS_PORT"
 	)
 
 	cfg := rawConfig{}
@@ -86,6 +86,7 @@ func ReadConf() Config {
 
 	bootStrap, errBoot := strconv.ParseBool(os.Getenv(BOOTSTRAP))
 	if errBoot != nil {
+		log.Printf("Using default value for %s istead: %v\n", "Bootstrap", Bootstrap)
 		bootStrap = false
 	}
 	cfg.Bootstrap = bootStrap
@@ -160,7 +161,7 @@ func ReadConf() Config {
 
 func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 	//Errors array in which all errors get saved
-	errors := make([]validator.FieldError,0)
+	errors := make([]validator.FieldError, 0)
 	errors = nil
 	//playground validator
 	v := validator.New()
@@ -169,9 +170,9 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 	if err != nil {
 		//loop through errors
 		for _, fieldErr := range err.(validator.ValidationErrors) {
-			if fieldErr.Tag() == "dir"{
+			if fieldErr.Tag() == "dir" {
 				direrr := createDirectory(rawConfig.DataDir)
-				if direrr == nil{
+				if direrr == nil {
 					continue
 				}
 			}
@@ -184,27 +185,27 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 	bindAddr := net.ParseIP(rawConfig.RaftAddr)
 	//create new tcpaddr from bindaddr and raftport
 	raftAddr := net.TCPAddr{
-		IP: bindAddr,
+		IP:   bindAddr,
 		Port: rawConfig.RaftPort,
 	}
 	//create new tcpaddr from bindAddr and httpport
 	httpAddr := net.TCPAddr{
-		IP: bindAddr,
+		IP:   bindAddr,
 		Port: rawConfig.HttpPort,
 	}
 	metaAddress := net.ParseIP(rawConfig.MetaApiAddr)
 	metaAddr := net.TCPAddr{
-		IP: metaAddress,
+		IP:   metaAddress,
 		Port: rawConfig.MetaApiPort,
 	}
 	dnsApiAddress := net.ParseIP(rawConfig.DnsApiAddr)
 	dnsApiAddr := net.TCPAddr{
-		IP: dnsApiAddress,
+		IP:   dnsApiAddress,
 		Port: rawConfig.DnsApiPort,
 	}
 	dnsAddress := net.ParseIP(rawConfig.DnsAddr)
 	dnsAddr := net.TCPAddr{
-		IP: dnsAddress,
+		IP:   dnsAddress,
 		Port: rawConfig.DnsPort,
 	}
 	//join address
@@ -213,25 +214,25 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 	if rawConfig.JoinAddr != "" {
 		joinAddress := net.ParseIP(rawConfig.JoinAddr)
 		joinAddr = &net.TCPAddr{
-			IP: joinAddress,
+			IP:   joinAddress,
 			Port: rawConfig.HttpPort,
 		}
 	}
 	//create config
 	config := Config{
-		Hostname: rawConfig.Hostname,
-		LogLevel: rawConfig.LogLevel,
-		DataDir: rawConfig.DataDir,
-		Bootstrap: rawConfig.Bootstrap,
-		Autojoin: rawConfig.Autojoin,
+		Hostname:            rawConfig.Hostname,
+		LogLevel:            rawConfig.LogLevel,
+		DataDir:             rawConfig.DataDir,
+		Bootstrap:           rawConfig.Bootstrap,
+		Autojoin:            rawConfig.Autojoin,
 		HealthcheckInterval: rawConfig.HealthcheckInterval,
-		HttpAddr: httpAddr,
-		RaftAddr: raftAddr,
-		MetaApiAddr: metaAddr,
-		DnsApiAddr: dnsApiAddr,
-		DnsAddr: dnsAddr,
-		JoinAddr: joinAddr,
-		UdpPort: rawConfig.UdpPort,
+		HttpAddr:            httpAddr,
+		RaftAddr:            raftAddr,
+		MetaApiAddr:         metaAddr,
+		DnsApiAddr:          dnsApiAddr,
+		DnsAddr:             dnsAddr,
+		JoinAddr:            joinAddr,
+		UdpPort:             rawConfig.UdpPort,
 	}
 
 	//return config
@@ -239,24 +240,24 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 }
 
 const (
-	Hostname = "ariel"
-	LogLevel = 1
-	DataDir = "alexandria-data"
-	Bootstrap = false
-	AutoJoin = true
+	Hostname            = "ariel"
+	LogLevel            = 1
+	DataDir             = "alexandria-data"
+	Bootstrap           = false
+	AutoJoin            = true
 	HealthcheckInterval = 3000
-	HttpAddr = "127.0.0.1"
-	RaftAddr = "127.0.0.1"
-	MetaApiAddr = "0.0.0.0"
-	DnsAddr = "0.0.0.0"
-	DnsApiAddr = "0.0.0.0"
-	JoinAddr = ""
-	HttpPort = 8000
-	RaftPort = 7000
-	MetaApiPort = 20000
-	DnsApiPort = 10000
-	DnsPort = 53
-	UdpPort  = 9000
+	HttpAddr            = "127.0.0.1"
+	RaftAddr            = "127.0.0.1"
+	MetaApiAddr         = "0.0.0.0"
+	DnsAddr             = "0.0.0.0"
+	DnsApiAddr          = "0.0.0.0"
+	JoinAddr            = ""
+	HttpPort            = 8000
+	RaftPort            = 7000
+	MetaApiPort         = 20000
+	DnsApiPort          = 10000
+	DnsPort             = 53
+	UdpPort             = 9000
 )
 
 func setDefaultValue(error validator.FieldError, conf *rawConfig) {
@@ -279,9 +280,6 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 		if err != nil {
 			log.Fatalf("Default directory %s could not created: %s\n", conf.DataDir, err.Error())
 		}
-	case "Bootstrap":
-		log.Printf("Using default value for %s istead: %v\n", "Bootstrap", Bootstrap)
-		conf.Bootstrap = Bootstrap
 	case "Autojoin":
 		log.Printf("Using default value for %s istead: %v\n", "Autojoin", AutoJoin)
 		conf.Autojoin = AutoJoin
