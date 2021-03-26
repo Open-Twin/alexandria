@@ -1,12 +1,14 @@
 package communication
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/raft"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/go-playground/validator/v10"
+	raft2 "github.com/hashicorp/raft"
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net"
@@ -52,6 +54,7 @@ func (api *API) Start() {
 
 	log.Println("Starting DNS")
 	go dns_udpserver.Start(func(addr net.Addr, buf []byte) []byte {
+
 		resp := handleDnsData(addr, buf, api.Node, api.Logger)
 		return resp
 	})
@@ -80,7 +83,14 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 		return createMetadataResponse(request.Service, request.Key, "data", data)
 	}
 	//handle other requests
-
+	if node.RaftNode.State() != raft2.Leader {
+		resp, err := forwardToLeader(buf, string(node.RaftNode.Leader()), node.Config.MetaApiAddr.Port, logger)
+		if err != nil{
+			logger.Println("forward to leader failed")
+			return createResponse("", "error", "something went wrong. please check your input.")
+		}
+		return resp
+	}
 	//marshal record
 	event := storage.Metadata{
 		Dnsormetadata: false,
@@ -112,6 +122,17 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 }
 
 func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte {
+
+	//handle other requests
+	if node.RaftNode.State() != raft2.Leader {
+		resp, err := forwardToLeader(buf, string(node.RaftNode.Leader()), node.Config.DnsApiAddr.Port, logger)
+		if err != nil{
+			logger.Println("forward to leader failed")
+			return createResponse("", "error", "something went wrong. please check your input.")
+		}
+		return resp
+	}
+
 	request := struct {
 		Hostname    string `bson:"Hostname"`
 		Ip          string `bson:"Ip"`
@@ -152,7 +173,7 @@ func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logge
 
 	if err := applyFuture.Error(); err != nil {
 		logger.Println("could not apply to raft cluster: " + err.Error())
-		return createResponse("", "error", "something went wrong. please check your input.")
+		return createResponse("", "error","something went wrong. please check your input")
 	}
 	var resp []byte
 	if err != nil {
@@ -210,4 +231,29 @@ func generateResourceRecord(hostname, ip string) (dns.DNSResourceRecord, error) 
 		ResourceData:       ipByte,
 	}
 	return rrecord, nil
+}
+
+func forwardToLeader(eventBytes []byte, leaderAddr string, port int, logger *log.Logger) ([]byte, error){
+	addr := strings.Split(leaderAddr,":")[0]
+	leader := addr + ":" + strconv.Itoa(port)
+	logger.Print("forwarding request to leader: "+leader)
+	con, err := net.Dial("udp", leader)
+	defer con.Close()
+	if err != nil {
+		return nil, err
+	}
+	//write to leader
+	_, err = con.Write(eventBytes)
+	if err != nil{
+		return nil, err
+	}
+	//read answer
+	p :=  make([]byte, 2048)
+	_, err = bufio.NewReader(con).Read(p)
+	if err != nil{
+		return nil, err
+	}
+	logger.Print("Request forwarded to leader "+leader)
+
+	return p, nil
 }
