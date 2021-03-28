@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
+	"github.com/Open-Twin/alexandria/communication/storageApi"
 	"github.com/Open-Twin/alexandria/loadbalancing"
 	"github.com/Open-Twin/alexandria/raft"
 	"github.com/rs/zerolog"
@@ -38,7 +39,7 @@ func main() {
 	dnsEntrypoint.Start()
 
 	//dns api
-	api := &communication.API{
+	api := &storageApi.API{
 		Node: raftNode,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,

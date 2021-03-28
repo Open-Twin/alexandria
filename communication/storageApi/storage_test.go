@@ -1,4 +1,4 @@
-package communication
+package storageApi
 
 import (
 	"bufio"

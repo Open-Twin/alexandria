@@ -10,7 +10,7 @@ import (
 /*
  * create response for metadata requests
  */
-func createMetadataResponse(service, key, etype, value string) []byte{
+func CreateMetadataResponse(service, key, etype, value string) []byte{
 
 	valueMap := map[string]string{
 		"Type": etype,
@@ -39,7 +39,7 @@ func createMetadataResponse(service, key, etype, value string) []byte{
 /*
  * create response for DNS requests
  */
-func createResponse(domain, etype, value string) []byte{
+func CreateResponse(domain, etype, value string) []byte{
 
 	response := struct {
 		Domain string

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
+	"github.com/Open-Twin/alexandria/communication/storageApi"
 	"github.com/Open-Twin/alexandria/raft"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -73,7 +74,7 @@ func TestMain(m *testing.M) {
 	dnsEntrypoint.Start()
 
 	//dns api
-	dnsApi := &communication.API{
+	dnsApi := &storageApi.API{
 		Node: node,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
