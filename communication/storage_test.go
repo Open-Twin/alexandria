@@ -13,7 +13,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	logger := log.New(os.Stdout,"",log.Ltime)
 
 	raftaddr := net.TCPAddr{
 		IP: net.ParseIP("127.0.0.1"),
@@ -47,7 +46,7 @@ func TestMain(m *testing.M) {
 		DnsApiAddr: dnsaddr,
 		JoinAddr: joinaddr,
 	}
-	node, err := raft.NewInMemNodeForTesting(&conf, logger)
+	node, err := raft.NewInMemNodeForTesting(&conf)
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"fmt"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/mgo.v2/bson"
 	"net"
 	"os"
@@ -20,19 +20,19 @@ func sendBsonMessage(address string, msg bson.M) {
 	conn, err := net.Dial("udp", address)
 	defer conn.Close()
 	if err != nil {
-		fmt.Printf("Error on establishing connection: %s\n", err)
+		log.Printf("Error on establishing connection: %s\n", err)
 	}
 	sendMsg, err := bson.Marshal(msg)
 
 	conn.Write(sendMsg)
-	fmt.Printf("Message sent: %s\n", sendMsg)
+	log.Printf("Message sent: %s\n", sendMsg)
 
 	answer := make([]byte, 2048)
 	_, err = bufio.NewReader(conn).Read(answer)
 	if err != nil {
-		fmt.Printf("Error on receiving answer: %v", err)
+		log.Printf("Error on receiving answer: %v", err)
 	} else {
-		fmt.Printf("Answer:\n%s\n", answer)
+		log.Printf("Answer:\n%s\n", answer)
 	}
 }
 

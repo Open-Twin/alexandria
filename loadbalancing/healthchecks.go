@@ -4,8 +4,8 @@ import (
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/go-ping/ping"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"runtime"
 	"time"
@@ -39,8 +39,8 @@ func (hc *HealthCheck) ScheduleHealthChecks() {
 }
 
 func (hc *HealthCheck) loopNodes() {
-	log.Printf("Running healthchecks")
-	log.Printf("%v", hc.Nodes)
+	log.Info().Msg("Running healthchecks")
+	log.Debug().Msgf("Nodes to be healthchecked: %v", hc.Nodes)
 	for ip := range hc.Nodes {
 		node := hc.Nodes[ip]
 		if hc.CheckType == HttpCheck {
@@ -56,16 +56,16 @@ func sendHttpCheck(ip string, node *dns.NodeHealth) {
 	resp, err := http.Get("http://" + ip + ":8080/health")
 	if err != nil {
 		node.Healthy = false
-		log.Printf("Node %s could not be reached: %s\n", ip, err)
+		log.Info().Msgf("Node %s could not be reached: %s\n", ip, err)
 		return
 	}
 
 	respBody, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode == 200 {
-		log.Printf("Node %s healthy. Response: %v\n", ip, string(respBody))
+		log.Info().Msgf("Node %s healthy. Response: %v\n", ip, string(respBody))
 		node.Healthy = true
 	} else {
-		log.Printf("Node %s responded with bad status code %v: %s\n", ip, resp.StatusCode, resp.Status)
+		log.Info().Msgf("Node %s responded with bad status code %v: %s\n", ip, resp.StatusCode, resp.Status)
 		node.Healthy = false
 	}
 }
@@ -73,7 +73,8 @@ func sendHttpCheck(ip string, node *dns.NodeHealth) {
 func sendPingCheck(ip string, node *dns.NodeHealth) {
 	pinger, err := ping.NewPinger(ip)
 	if err != nil {
-		log.Printf("Error on creating pinger: %s\n", err.Error())
+		log.Warn().Msgf("Error on creating pinger: %s\n", err.Error())
+		return
 	}
 
 	os := runtime.GOOS
@@ -85,16 +86,17 @@ func sendPingCheck(ip string, node *dns.NodeHealth) {
 	pinger.Interval = 10
 	err = pinger.Run()
 	if err != nil {
-		log.Printf("Error on sending ping: %s\n", err.Error())
+		log.Warn().Msgf("Error on sending ping: %s\n", err.Error())
+		return
 	}
 
 	stats := pinger.Statistics()
 
 	if stats.PacketsRecv > 1 {
-		log.Printf("Node %s healthy. Statistics: %+v\n", ip, stats)
+		log.Info().Msgf("Node %s healthy. Statistics: %+v\n", ip, stats)
 		node.Healthy = true
 	} else {
-		log.Printf("Node %s could not be reached. Statistics: %+v\n", ip, stats)
+		log.Info().Msgf("Node %s could not be reached. Statistics: %+v\n", ip, stats)
 		node.Healthy = false
 	}
 }

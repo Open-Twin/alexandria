@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 		JoinAddr: joinaddr,
 	}
 
-	node, err := raft.NewInMemNodeForTesting(&conf, logger)
+	node, err := raft.NewInMemNodeForTesting(&conf)
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}

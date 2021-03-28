@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
+	"github.com/rs/zerolog/log"
 	"io"
-	"log"
 	"strconv"
 	"sync"
 )
@@ -28,12 +28,12 @@ func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
 		DnsOrMetadata bool
 	}{}
 	if err := json.Unmarshal(logEntry.Data, &dnsormeta); err != nil {
-		return errors.New("Failed unmarshaling dnsormetadata log entry")
+		return errors.New("failed unmarshaling dnsormetadata log entry")
 	}
-	log.Println("dnsormetadata: " + strconv.FormatBool(dnsormeta.DnsOrMetadata))
+	log.Debug().Msg("dnsormetadata: " + strconv.FormatBool(dnsormeta.DnsOrMetadata))
 	if dnsormeta.DnsOrMetadata {
 		if err := json.Unmarshal(logEntry.Data, &d); err != nil {
-			return errors.New("Failed unmarshaling Raft log entry")
+			return errors.New("failed unmarshaling Raft log entry")
 		}
 		err := applyToDnsStore(fsm, d)
 		if err != nil {
@@ -41,7 +41,7 @@ func (fsm *Fsm) Apply(logEntry *raft.Log) interface{} {
 		}
 	} else {
 		if err := json.Unmarshal(logEntry.Data, &m); err != nil {
-			return errors.New("Failed unmarshaling Raft log entry")
+			return errors.New("failed unmarshaling Raft log entry")
 		}
 		err := applyToMetadataStore(fsm, m)
 		if err != nil {
@@ -57,29 +57,28 @@ func applyToMetadataStore(fsm *Fsm, e storage.Metadata) error {
 	case "store":
 		err := fsm.MetadataRepo.Create(e.Service, e.Ip, e.Key, e.Value)
 		if err != nil {
-			log.Print("store error: " + err.Error())
+			log.Error().Msgf("store error: %s", err.Error())
 			return err
 		}
 		return nil
 	case "update":
 		err := fsm.MetadataRepo.Update(e.Service, e.Ip, e.Key, e.Value)
 		if err != nil {
-			log.Print("update error: " + err.Error())
+			log.Error().Msgf("update error: %s", err.Error())
 			return err
 		}
 		return nil
 	case "delete":
 		err := fsm.MetadataRepo.Delete(e.Service, e.Ip, e.Key)
 		if err != nil {
-			log.Print("delete error: " + err.Error())
+			log.Error().Msgf("delete error: %s", err.Error())
 			return err
 		}
 		return nil
 	default:
-		log.Printf("Unrecognized metadata event type in Raft log entry: %s.", e.Type)
+		log.Error().Msgf("Unrecognized metadata event type in Raft log entry: %s", e.Type)
 		return errors.New("Unrecognized metadata event type in Raft log entry: " + e.Type)
 	}
-	return nil
 }
 
 func applyToDnsStore(fsm *Fsm, e storage.Dnsresource) error {
@@ -87,30 +86,29 @@ func applyToDnsStore(fsm *Fsm, e storage.Dnsresource) error {
 	case "store":
 		err := fsm.DnsRepo.Create(e.Hostname, e.Ip, e.ResourceRecord)
 		if err != nil {
-			log.Print("store error: " + err.Error())
+			log.Error().Msgf("store error: %s", err.Error())
 			return err
 		}
 		return nil
 	case "update":
 		err := fsm.DnsRepo.Update(e.Hostname, e.Ip, e.ResourceRecord)
 		if err != nil {
-			log.Print("update error: " + err.Error())
+			log.Error().Msgf("update error: %s", err.Error())
 			return err
 		}
 		return nil
 	case "delete":
 		err := fsm.DnsRepo.Delete(e.Hostname, e.Ip)
 		if err != nil {
-			log.Print("delete error: " + err.Error())
+			log.Error().Msgf("delete error: %s", err.Error())
 			return err
 		}
 		return nil
 	default:
-		log.Printf("Unrecognized dns event type in Raft log entry: %s.", e.RequestType)
+		log.Error().Msgf("Unrecognized dns event type in Raft log entry: %s", e.RequestType)
 		return errors.New("Unrecognized dns event type in Raft log entry: " + e.RequestType)
 		// TODO: Return error
 	}
-	return nil
 }
 
 // Snapshot is used to support log compaction. This call should

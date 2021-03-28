@@ -2,11 +2,10 @@ package loadbalancing
 
 import (
 	"context"
-	"fmt"
 	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/storage"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 	"net/http"
 	"strconv"
@@ -50,6 +49,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 }
 
 func (lb *AlexandriaBalancer) Close() {
+	log.Info().Msg("Shutting down Loadbalancer")
 	lb.httpServer.Shutdown(context.Background())
 	// TODO Close udpServer and stop HealthChecks
 }
@@ -59,7 +59,7 @@ func (lb *AlexandriaBalancer) startSignupEndpoint() {
 	http.HandleFunc("/signup", lb.addAlexandriaNode)
 	err := lb.httpServer.ListenAndServe()
 	if err != nil {
-		log.Fatalf("Signup Endpoint for Loadbalancer could not be started: %s", err.Error())
+		log.Fatal().Msgf("Signup Endpoint for Loadbalancer could not be started: %s", err.Error())
 	}
 }
 
@@ -106,38 +106,39 @@ func (lb *AlexandriaBalancer) nextAddr() string {
 Forwards an incoming message to a dns node
 */
 func (lb *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) string {
-	fmt.Println("Message received: " + string(msg))
+	log.Debug().Msgf("Message received: %s\n", string(msg))
 
 	if len(lb.nodes) == 0 {
-		log.Println("No dns nodes to forward to.")
+		log.Warn().Msg("No dns nodes to forward to.")
 		return "no nodes available"
 	}
 
 	adrentik := lb.nextAddr()
 	if adrentik == "" {
-		log.Println("No healthy nodes available.")
+		log.Warn().Msg("No healthy nodes available.")
+		return "No healthy nodes"
 	}
 
 	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik+":"+strconv.Itoa(lb.DnsPort))
 	if err != nil {
-		log.Printf("Error on resolving dns address : %s\n", err)
+		log.Error().Msgf("Error on resolving dns address : %s\n", err)
 	}
 
 	sourceAddr, err := net.ResolveUDPAddr("udp", source.String())
 	if err != nil {
-		log.Printf("Error on resolving client address : %s\n", err)
+		log.Error().Msgf("Error on resolving client address : %s\n", err)
 	}
 
 	target, err := net.DialUDP("udp", sourceAddr, receiverAddr)
 	if err != nil {
-		log.Printf("Error on establishing dns connection: %s\n", err)
+		log.Error().Msgf("Error on establishing dns connection: %s\n", err)
 	}
 
 	_, err = target.WriteToUDP(msg, receiverAddr)
 	if err != nil {
-		log.Printf("Error on sending message to dns: %s\n", err)
+		log.Error().Msgf("Error on sending message to dns: %s\n", err)
 	}
 
-	log.Printf("Message forwareded to: %s:%d\n", adrentik, lb.DnsPort)
+	log.Info().Msgf("Message forwareded to: %s:%d\n", adrentik, lb.DnsPort)
 	return "yeah"
 }

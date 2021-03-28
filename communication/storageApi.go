@@ -8,7 +8,7 @@ import (
 	"github.com/Open-Twin/alexandria/raft"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/go-playground/validator/v10"
-	raft2 "github.com/hashicorp/raft"
+	raftlib "github.com/hashicorp/raft"
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net"
@@ -62,11 +62,11 @@ func (api *API) Start() {
 
 func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte {
 	request := struct {
-		Service string `bson:"service"`
-		Ip      string `bson:"ip"`
-		Type    string `bson:"type"`
-		Key     string `bson:"key"`
-		Value   string `bson:"value"`
+		Service string `bson:"Service"`
+		Ip      string `bson:"Ip"`
+		Type    string `bson:"Type"`
+		Key     string `bson:"Key"`
+		Value   string `bson:"Value"`
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {
@@ -83,7 +83,7 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 		return createMetadataResponse(request.Service, request.Key, "data", data)
 	}
 	//handle other requests
-	if node.RaftNode.State() != raft2.Leader {
+	if node.RaftNode.State() != raftlib.Leader {
 		resp, err := forwardToLeader(buf, string(node.RaftNode.Leader()), node.Config.MetaApiAddr.Port, logger)
 		if err != nil{
 			logger.Println("forward to leader failed")
@@ -124,7 +124,7 @@ func handleMetadata(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logg
 func handleDnsData(addr net.Addr, buf []byte, node *raft.Node, logger *log.Logger) []byte {
 
 	//handle other requests
-	if node.RaftNode.State() != raft2.Leader {
+	if node.RaftNode.State() != raftlib.Leader {
 		resp, err := forwardToLeader(buf, string(node.RaftNode.Leader()), node.Config.DnsApiAddr.Port, logger)
 		if err != nil{
 			logger.Println("forward to leader failed")

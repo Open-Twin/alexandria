@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 )
 
@@ -19,26 +19,26 @@ func HandleRequest(addr net.Addr, requestData []byte) DNSPDU {
 	// Parse header of dns message
 	header, err := parseHeader(buf)
 	if err != nil {
-		log.Print(err.Error())
+		log.Error().Msg(err.Error())
 	}
 
 	// Parse flags of dns header
 	flags, err := parseFlags(header.Flags)
 	if err != nil {
-		log.Print(err.Error())
+		log.Error().Msg(err.Error())
 	}
 
 	// Parse dns body containing Question, Answer, Authority and Additional Information
 	body, err := parseBody(header, buf)
 	if err != nil {
-		log.Print(err.Error())
+		log.Error().Msg(err.Error())
 	}
 
 	body.Flags = flags
 
-	log.Printf("------Header------\n %+v \n", header)
-	log.Printf("------Flags-------\n %+v \n", flags)
-	log.Printf("------Body--------\n %+v \n", body)
+	log.Debug().Msgf("------Header------\n %+v \n", header)
+	log.Debug().Msgf("------Flags-------\n %+v \n", flags)
+	log.Debug().Msgf("------Body--------\n %+v \n", body)
 
 
 	// Send answer
