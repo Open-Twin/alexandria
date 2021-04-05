@@ -42,7 +42,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	}
 
 	// Listen for connections
-	go udpServer.Start(func(addr net.Addr, msg []byte) []byte {
+	udpServer.Start(func(addr net.Addr, msg []byte) []byte {
 		// Run the method for every message received
 		go lb.forwardMsg(addr, msg)
 		return []byte("request forwarded")
@@ -65,6 +65,10 @@ func (lb *AlexandriaBalancer) startSignupEndpoint() {
 
 func (lb *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	if len(r.Form) == 0 {
+		log.Println("Reqeust without params")
+		return
+	}
 	ip := r.Form["ip"][0]
 
 	lb.lock.Lock()
