@@ -17,11 +17,10 @@ func main() {
 		"RequestType":		  "store",
 	}*/
 	msg := bson.M{
-		"hostname": os.Args[1],
-		"ip" : os.Args[2],
-		"requestType" : "store",
+		"hostname":    os.Args[1],
+		"ip":          os.Args[2],
+		"requestType": "store",
 	}
 
 	sendBsonMessage(address, msg)
 }
-
