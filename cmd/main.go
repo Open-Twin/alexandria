@@ -3,49 +3,50 @@ package main
 import (
 	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
+	"github.com/Open-Twin/alexandria/communication/storageApi"
 	"github.com/Open-Twin/alexandria/loadbalancing"
 	"github.com/Open-Twin/alexandria/raft"
-	"log"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"os"
 )
 
 func main() {
-	//init raft
+	//init logger
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	//read config
 	conf := cfg.ReadConf()
-	log.Print("Config: ")
-	log.Print(conf)
-	raftLogger := log.New(os.Stdout, "raft: ", log.Ltime)
+	logLevel := conf.LogLevel
+	zerolog.SetGlobalLevel(zerolog.Level(logLevel))
 
-	raftNode, err := raft.Start(&conf, raftLogger)
+	log.Debug().Msgf("Config: %v", conf)
 
+	raftNode, err := raft.Start(&conf)
 	if err != nil {
-		raftLogger.Println("error creating node. EXITING")
+		log.Panic().Msg("Error creating node. Exiting!")
 		os.Exit(1)
 	}
 
 	//TODO: race conditions locks???
 	//dns entrypoint
-	dnsEntrypointLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node:    raftNode,
 		Address: conf.DnsAddr,
-		Logger:  &dnsEntrypointLogger,
 	}
-	raftLogger.Println("Starting DNS entrypoint")
+	log.Info().Msg("Starting DNS entrypoint")
 	dnsEntrypoint.Start()
 
 	//dns api
-	apiLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
-	api := &communication.API{
+	api := &storageApi.API{
 		Node: raftNode,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
 		DNSAddress:  conf.DnsApiAddr,
 		NetworkType: "udp",
-		Logger:      &apiLogger,
 	}
-	raftLogger.Println("Starting storage API")
+	log.Info().Msg("Starting storage API")
 	api.Start()
 
 	healthchecks := loadbalancing.HealthCheck{
@@ -53,19 +54,18 @@ func main() {
 		Interval:  30 * 1000,
 		CheckType: loadbalancing.PingCheck,
 	}
-	raftLogger.Println("Starting healthchecks")
+	log.Info().Msg("Starting healthchecks")
 	healthchecks.ScheduleHealthChecks()
 
+	//log.Info().Msg("Starting reporting load to loadbalancer")
 	//loadbalancing.StartLoadReporting()
 
-	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{
 		Node:    raftNode,
 		Address: conf.HttpAddr,
 		UdpPort: conf.UdpPort,
-		Logger:  &httpLogger,
 	}
 	//starts the http service (not in a goroutine so it blocks from exiting)
-	raftLogger.Println("Starting HTTP service")
+	log.Info().Msg("Starting HTTP service")
 	service.Start()
 }

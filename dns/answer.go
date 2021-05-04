@@ -1,14 +1,10 @@
 package dns
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
-var logging *log.Logger
-
-func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, logger *log.Logger, originalMessage []byte) DNSPDU {
-	logging = logger
-
+func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, originalMessage []byte) DNSPDU {
 	// set Response Flag to true
 	request.Flags.QueryResponse = true
 	//Because server can handle recursion
@@ -65,7 +61,7 @@ func PrepareToSend(pdu DNSPDU) []byte {
 
 	resp, err := pdu.Bytes()
 	if err != nil{
-		logging.Print(err.Error())
+		log.Error().Msgf("Error converting dns response to byte array: %v", err.Error())
 	}
 	return resp
 }

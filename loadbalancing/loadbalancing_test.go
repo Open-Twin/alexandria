@@ -33,14 +33,14 @@ func TestHealthchecksSendPing(t *testing.T) {
 	}}
 
 	hc := HealthCheck{
-		Nodes:     &nodes,
+		Nodes:     nodes,
 		Interval:  10,
 		CheckType: PingCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(500 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == false {
 		t.Errorf("Sending ping healthcheck did not work: %v", nodes)
 	}
@@ -53,14 +53,14 @@ func TestHealthchecksSendPingNodeOffline(t *testing.T) {
 	}}
 
 	hc := HealthCheck{
-		Nodes:     &nodes,
+		Nodes:     nodes,
 		Interval:  10,
 		CheckType: PingCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(30 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["12.12.12.12"].Healthy == true {
 		t.Errorf("Ping healthcheck falesly reported node as online: %v", nodes)
 	}
@@ -75,14 +75,14 @@ func TestHealthchecksSendHttp(t *testing.T) {
 	}}
 
 	hc := HealthCheck{
-		Nodes:     &nodes,
+		Nodes:     nodes,
 		Interval:  10,
 		CheckType: HttpCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(30 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == false {
 		t.Errorf("Sending http healthcheck did not work: %v", nodes)
 	}
@@ -95,14 +95,14 @@ func TestHealthchecksSendHttpNodeOffline(t *testing.T) {
 	}}
 
 	hc := HealthCheck{
-		Nodes:     &nodes,
+		Nodes:     nodes,
 		Interval:  10,
 		CheckType: HttpCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(50 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == true {
 		t.Errorf("Http healthcheck falesly reported node as online: %v", nodes)
 	}

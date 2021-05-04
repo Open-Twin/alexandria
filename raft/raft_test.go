@@ -26,7 +26,6 @@ var s communication.HttpServer
 Entrypoint for the tests
 */
 func TestMain(m *testing.M) {
-	logger := log.New(os.Stdout,"",log.Ltime)
 
 	raftaddr := net.TCPAddr{
 		IP: net.ParseIP(raftaddrip),
@@ -55,7 +54,7 @@ func TestMain(m *testing.M) {
 		JoinAddr: joinaddr,
 	}
 
-	node, err := raft.NewInMemNodeForTesting(&conf, logger)
+	node, err := raft.NewInMemNodeForTesting(&conf)
 	if err != nil{
 		log.Fatal("Preparing tests failed: "+err.Error())
 	}
@@ -63,7 +62,6 @@ func TestMain(m *testing.M) {
 	s = communication.HttpServer{
 		Node: node,
 		Address: httpaddr,
-		Logger: logger,
 	}
 	go s.Start()
 	time.Sleep(5 * time.Second)
@@ -120,4 +118,8 @@ func TestJoinWithCorrectAddressShouldPass(t *testing.T){
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
+}
+
+func TestPostDataToLeaderAndRetrieveOnFollowerShouldPass(t *testing.T){
+	
 }
