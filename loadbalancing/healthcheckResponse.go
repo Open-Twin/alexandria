@@ -1,8 +1,8 @@
 package loadbalancing
 
 import (
-	"io/ioutil"
 	"github.com/rs/zerolog/log"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -23,16 +23,18 @@ func lbRegister(lbUrl string) {
 
 	resp, err := http.PostForm("http://"+lbUrl+"/signup", data)
 	if err != nil {
-		log.Error().Msgf("Error: %v", err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Error().Msgf("Error: %v", err)
-	}
+		log.Error().Msgf("Registration at loadbalancer failed: %v", err)
+	} else {
+		defer resp.Body.Close()
 
-	if string(body) != "succesfully added" {
-		log.Error().Msgf("Adding node didn't work: %v", string(body))
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Error().Msgf("Error reading loadbalancer answer: %v", err)
+		}
+
+		if string(body) != "succesfully added" {
+			log.Error().Msgf("Adding node didn't work: %v", string(body))
+		}
 	}
 }
 

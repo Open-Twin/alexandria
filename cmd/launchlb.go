@@ -1,7 +1,9 @@
-package loadbalancing
+package main
+
+import "github.com/Open-Twin/alexandria/loadbalancing"
 
 func main() {
-	loadbalancer := AlexandriaBalancer{
+	loadbalancer := loadbalancing.AlexandriaBalancer{
 		DnsPort:             53,
 		HealthCheckInterval: 30 * 1000,
 	}
