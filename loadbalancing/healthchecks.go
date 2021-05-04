@@ -76,7 +76,6 @@ func sendPingCheck(ip string, node *dns.NodeHealth) {
 		log.Warn().Msgf("Error on creating pinger: %s\n", err.Error())
 		return
 	}
-
 	os := runtime.GOOS
 	if os == "windows" {
 		pinger.SetPrivileged(true)

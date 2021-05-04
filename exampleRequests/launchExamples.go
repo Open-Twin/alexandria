@@ -37,7 +37,7 @@ func sendBsonMessage(address string, msg bson.M) {
 }
 
 func sendDnsEntry() {
-	address := "127.0.0.1:10000"
+	address := "127.0.0.1:10001"
 	/*msg := bson.M{
 		"Labels":             []string{"at", "ac", "dejan"},
 		"Type":               uint16(60),

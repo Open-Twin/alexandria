@@ -2,11 +2,13 @@ package raft
 
 import (
 	"github.com/Open-Twin/alexandria/cfg"
+	"github.com/Open-Twin/alexandria/plugins"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	bolt "github.com/hashicorp/raft-boltdb"
 	"github.com/rs/zerolog/log"
 	"io"
+
 	//stdlog "log"
 	"net"
 	"path/filepath"
@@ -27,9 +29,13 @@ creates and returns a new node
 func NewNode(config *cfg.Config) (*Node, error){
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddr.String())
+
 	//TODO: logger
-	//appLogger := log.With().Str("component", "raft-node").Logger()
-	//raftConfig.Logger = stdlog.New(log.With().Str("component", "raft-node").Logger(),"",0)
+	//raftLogger := log.With().Str("component", "raft-node").Logger()
+	logi := plugins.Logger{}
+
+	raftConfig.Logger = logi
+	//logAdapter := plugins.NewDefaultSink(raftLogger)
 
 	metarepo := storage.NewInMemoryStorageRepository()
 	dnsrepo := storage.NewInMemoryDNSStorageRepository()

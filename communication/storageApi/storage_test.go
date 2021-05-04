@@ -52,14 +52,12 @@ func TestMain(m *testing.M) {
 	}
 
 	//dns api
-	dnsApiLogger := *log.New(os.Stdout,"dns: ",log.Ltime)
 	dnsApi := &API{
 		Node: node,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
 		DNSAddress: conf.DnsApiAddr,
 		NetworkType: "udp",
-		Logger: &dnsApiLogger,
 	}
 	dnsApi.Start()
 
