@@ -38,7 +38,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 
 	var ipport = 53
 	var isport = 55
-	var ishost = "localhost"
+	var ishost = "127.0.0.1"
 	//	var idrop *float64 = flag.Float64("d", 0.0, "Packet drop rate")
 
 	hostport := fmt.Sprintf("%s:%d", ishost, isport)

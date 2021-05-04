@@ -54,7 +54,7 @@ func main() {
 	}
 	healthchecks.ScheduleHealthChecks()
 
-	loadbalancing.StartLoadReporting()
+	loadbalancing.StartLoadReporting("127.0.0.1:8080")
 
 	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{
