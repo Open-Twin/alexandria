@@ -3,6 +3,8 @@ package dns
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/rs/zerolog/log"
+	"reflect"
 )
 
 func (flags DNSFlags) WriteFlags() uint16 {
@@ -45,9 +47,8 @@ func (flags DNSFlags) WriteFlags() uint16 {
 }
 
 func writeLabels(responseBuffer *bytes.Buffer, labels []string) error {
-	//If the label is nil, we just insert a DNS pointer to the request FQDN position (byte 13)
-	//TODO
-	if labels == nil {
+	//TODO: Pointer ??
+	if reflect.DeepEqual(labels, []string{"P", "O", "I", "N", "T", "E", "R"}) {
 		_, err := responseBuffer.Write([]byte{0xc0, 0x0c})
 		return err
 	}
@@ -102,6 +103,7 @@ func writeResourceRecords(buffer *bytes.Buffer, rrs []DNSResourceRecord) error {
 }
 
 func (pdu DNSPDU) Bytes() ([]byte, error) {
+
 	var responseBuffer = new(bytes.Buffer)
 
 	pdu.Header.Flags = pdu.Flags.WriteFlags()
@@ -128,7 +130,7 @@ func (pdu DNSPDU) Bytes() ([]byte, error) {
 			return nil, err
 		}
 	}
-
+	log.Debug().Msgf("Generated Answers: %v", pdu.AnswerResourceRecords)
 	err = writeResourceRecords(responseBuffer, pdu.AnswerResourceRecords)
 	if err != nil {
 		return nil, err

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/storage"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 	"net/http"
 	"sync"
@@ -28,7 +28,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	go lb.startSignupEndpoint()
 
 	hc := HealthCheck{
-		Nodes:     &lb.nodes,
+		Nodes:     lb.nodes,
 		Interval:  lb.HealthCheckInterval,
 		CheckType: HttpCheck,
 	}
@@ -42,8 +42,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	//	var idrop *float64 = flag.Float64("d", 0.0, "Packet drop rate")
 
 	hostport := fmt.Sprintf("%s:%d", ishost, isport)
-	Vlogf(3, "Proxy port = %d, Server address = %s\n",
-		ipport, hostport)
+	log.Info().Msgf("Proxy port = %d, Server address = %s\n", ipport, hostport)
 
 	if setup(hostport, ipport) {
 		lb.runProxy()
@@ -51,6 +50,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 }
 
 func (lb *AlexandriaBalancer) Close() {
+	log.Info().Msg("Shutting down Loadbalancer")
 	lb.httpServer.Shutdown(context.Background())
 	// TODO Close udpServer and stop HealthChecks
 }
@@ -60,14 +60,14 @@ func (lb *AlexandriaBalancer) startSignupEndpoint() {
 	http.HandleFunc("/signup", lb.addAlexandriaNode)
 	err := lb.httpServer.ListenAndServe()
 	if err != nil {
-		log.Fatalf("Signup Endpoint for Loadbalancer could not be started: %s", err.Error())
+		log.Fatal().Msgf("Signup Endpoint for Loadbalancer could not be started: %s", err.Error())
 	}
 }
 
 func (lb *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	if len(r.Form) == 0 {
-		log.Println("Reqeust without params")
+		log.Error().Msgf("Reqeust without params")
 		return
 	}
 	ip := r.Form["ip"][0]
@@ -124,7 +124,7 @@ func setup(hostport string, port int) bool {
 		return false
 	}
 	ProxyConn = pudp
-	Vlogf(2, "Proxy serving on port %d\n", port)
+	log.Info().Msgf("Proxy serving on port %d\n", port)
 
 	// Get server address
 	srvaddr, err := net.ResolveUDPAddr("udp", hostport)
@@ -132,7 +132,7 @@ func setup(hostport string, port int) bool {
 		return false
 	}
 	ServerAddr = srvaddr
-	Vlogf(2, "Connected to server at %s\n", hostport)
+	log.Info().Msgf("Connected to server at %s\n", hostport)
 	return true
 }
 
@@ -158,7 +158,7 @@ func RunConnection(conn *Connection) {
 		if checkreport(1, err) {
 			continue
 		}
-		Vlogf(3, "Relayed '%s' from server to %s.\n",
+		log.Info().Msgf("Relayed '%s' from server to %s.\n",
 			string(buffer[0:n]), conn.ClientAddr.String())
 	}
 }
@@ -186,6 +186,8 @@ func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 		}
 	}
 
+	lb.pointer = i
+
 	return &net.UDPAddr{
 		Port: ServerAddr.Port,
 		IP:   net.ParseIP("127.0.0.1"),
@@ -200,8 +202,7 @@ func (lb *AlexandriaBalancer) runProxy() {
 		if checkreport(1, err) {
 			continue
 		}
-		Vlogf(3, "Read '%s' from client %s\n",
-			string(buffer[0:n]), cliaddr.String())
+		log.Info().Msgf("Read '%s' from client %s\n", string(buffer[0:n]), cliaddr.String())
 		saddr := cliaddr.String()
 		dlock()
 		conn, found := ClientDict[saddr]
@@ -216,11 +217,11 @@ func (lb *AlexandriaBalancer) runProxy() {
 			}
 			ClientDict[saddr] = conn
 			dunlock()
-			Vlogf(2, "Created new connection for client %s\n", saddr)
+			log.Info().Msgf("Created new connection for client %s\n", saddr)
 			// Fire up routine to manage new connection
 			go RunConnection(conn)
 		} else {
-			Vlogf(5, "Found connection for client %s\n", saddr)
+			log.Info().Msgf("Found connection for client %s\n", saddr)
 			dunlock()
 		}
 		// Relay to server
@@ -231,20 +232,11 @@ func (lb *AlexandriaBalancer) runProxy() {
 	}
 }
 
-var verbosity = 6
-
-// Log result if verbosity level high enough
-func Vlogf(level int, format string, v ...interface{}) {
-	if level <= verbosity {
-		log.Printf(format, v...)
-	}
-}
-
 // Handle errors
 func checkreport(level int, err error) bool {
 	if err == nil {
 		return false
 	}
-	Vlogf(level, "Error: %s", err.Error())
+	log.Error().Msgf("Error: %s", err.Error())
 	return true
 }

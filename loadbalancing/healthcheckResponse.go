@@ -1,8 +1,8 @@
 package loadbalancing
 
 import (
-	"fmt"
 	"io/ioutil"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
 	"time"
@@ -13,7 +13,7 @@ func StartLoadReporting(lbUrl string) {
 
 	http.HandleFunc("/health", sendLoad)
 	go http.ListenAndServe(":8080", nil)
-	fmt.Println("Started reporting alexandria server load")
+	log.Info().Msg("Started reporting alexandria server load")
 }
 
 func lbRegister(lbUrl string) {
@@ -23,22 +23,22 @@ func lbRegister(lbUrl string) {
 
 	resp, err := http.PostForm("http://"+lbUrl+"/signup", data)
 	if err != nil {
-		fmt.Println("Error: %v", err)
+		log.Error().Msgf("Error: %v", err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error: %v", err)
+		log.Error().Msgf("Error: %v", err)
 	}
 
 	if string(body) != "succesfully added" {
-		fmt.Println("Adding node didn't work: %v", string(body))
+		log.Error().Msgf("Adding node didn't work: %v", string(body))
 	}
 }
 
 func sendLoad(w http.ResponseWriter, r *http.Request) {
 	data := collectData()
-	fmt.Printf("Sending status as requested: %s\n", string(data))
+	log.Debug().Msgf("Sending status as requested: %s\n", string(data))
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }

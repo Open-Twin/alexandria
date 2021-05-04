@@ -74,6 +74,9 @@ func (imsp *StorageRepository) Create(hostname, ip string, record dns.DNSResourc
 
 // Adding the read function, which basically just returns the specific value of the given service as a string
 func (imsp *StorageRepository) Read(hostname string) (dns.DNSResourceRecord, error) {
+	if !imsp.ExistsHostname(hostname) {
+		return dns.DNSResourceRecord{}, errors.New("hostname does not exist")
+	}
 	imsp.mutex.RLock()
 	defer imsp.mutex.RUnlock()
 
@@ -86,6 +89,9 @@ func (imsp *StorageRepository) Read(hostname string) (dns.DNSResourceRecord, err
 func (imsp *StorageRepository) Update(hostname, ip string, value dns.DNSResourceRecord) error {
 	imsp.mutex.Lock()
 	defer imsp.mutex.Unlock()
+
+	// TODO: check hostname existence
+
 	imsp.Entries[hostname][ip] = value
 	imsp.LbInfo[ip] = dns.NodeHealth{
 		Healthy:     false,

@@ -4,7 +4,7 @@ package dns
 	"bufio"
 	"errors"
 	"github.com/Open-Twin/alexandria/cfg"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 	"time"
 )
@@ -27,12 +27,12 @@ func sendRecursiveRequest(record string, buf []byte, channel chan []byte){
 	// Setup a UDP connection
 	conn, err := net.Dial("udp", record)
 	if err != nil {
-		log.Fatal("failed to connect:", err)
+		log.Fatal().Msg("failed to connect:", err)
 	}
 	defer conn.Close()
 
 	if err := conn.SetDeadline(time.Now().Add(15 * time.Second)); err != nil {
-		log.Fatal("failed to set deadline: ", err)
+		log.Fatal().Msg("failed to set deadline: ", err)
 	}
 	conn.Write(buf)
 

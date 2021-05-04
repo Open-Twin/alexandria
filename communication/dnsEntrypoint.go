@@ -3,27 +3,25 @@ package communication
 import (
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/raft"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 )
 
 type DnsEntrypoint struct {
 	Node    *raft.Node
-	Address net.Addr
-	Logger  *log.Logger
+	Address net.TCPAddr
 }
 
-func (api *DnsEntrypoint) StartDnsEntrypoint(){
+func (api *DnsEntrypoint) Start(){
 	udpserver := UDPServer{
-		Address: []byte{0,0,0,0},
-		Port: 53,
+		Address: api.Address.IP,
+		Port: api.Address.Port,
 	}
 	tcpserver := TCPServer{
-		Address: []byte{0,0,0,0},
-		Port: 53,
+		Address: api.Address.IP,
+		Port: api.Address.Port,
 	}
 
-	log.Println("Starting DNS entrypoint")
 	go udpserver.Start(func(addr net.Addr, buf []byte) []byte {
 		answer := handle(addr,buf, api)
 		return answer
@@ -36,20 +34,19 @@ func (api *DnsEntrypoint) StartDnsEntrypoint(){
 
 func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 	pdu := dns.HandleRequest(addr, buf)
-	log.Println("-------------------create answer-------------------")
+	log.Debug().Msg("-------------------create answer-------------------")
 
-	hostnames := dns.ExtractQuestionHostnames(pdu)
-	log.Printf("HORST: %s", hostnames)
+	hostnames := dns.ExtractQuestionHostnames(&pdu)
 
 	requestedRecords := queryDnsRepo(hostnames, api)
-	log.Printf("Ranshid: %s", requestedRecords)
 
-	answer := dns.CreateAnswer(pdu, requestedRecords, api.Logger, buf)
-	log.Println(answer.Header)
-	log.Println(answer.Flags)
-	log.Println(answer.AnswerResourceRecords)
-	log.Println(string(answer.AnswerResourceRecords[0].ResourceData))
-	log.Println("-------------------answer end-------------------")
+	answer := dns.CreateAnswer(pdu, requestedRecords, buf)
+
+	log.Debug().Msgf("Answer Header: %v\n", answer.Header)
+	log.Debug().Msgf("Answer Flags: %v\n", answer.Flags)
+	log.Debug().Msgf("Answer Answer Resource Records: %v\n", answer.AnswerResourceRecords)
+	log.Debug().Msgf("Answer Additional Resource Records: %v\n", answer.AdditionalResourceRecords)
+	log.Debug().Msgf("-------------------answer end-------------------")
 	return dns.PrepareToSend(answer)
 }
 
@@ -67,7 +64,8 @@ func queryDnsRepo(hostnames []string, api *DnsEntrypoint) []dns.DNSResourceRecor
 					logging.Print(recErr.Error())
 				}
 			}*/
-			log.Printf("Reqeusted domain not available: %s", hostname)
+			log.Warn().Msgf("Reqeusted domain not available: %s", hostname)
+			return nil
 		}else{
 			array = append(array, query)
 		}

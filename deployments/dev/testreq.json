@@ -1,0 +1,7 @@
+{
+  "service": "electricity",
+  "ip": "1.2.3.4",
+  "type": "store",
+  "key": "volt",
+  "value": "50"
+}

@@ -1,67 +1,71 @@
 package main
 
 import (
-	"fmt"
+	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
+	"github.com/Open-Twin/alexandria/communication/storageApi"
 	"github.com/Open-Twin/alexandria/loadbalancing"
 	"github.com/Open-Twin/alexandria/raft"
-	"github.com/Open-Twin/alexandria/raft/config"
-	"log"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"os"
 )
 
 func main() {
-	//init raft
+	//init logger
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	//read config
-	rawConfig := config.ReadRawConfig()
-	//validate config
-	conf, confErr := rawConfig.ValidateConfig()
-	if confErr != nil {
-		fmt.Fprintf(os.Stderr, "Configuration errors - %s\n", confErr)
-		os.Exit(1)
-	}
-	raftLogger := log.New(os.Stdout, "raft: ", log.Ltime)
-	raftNode, err := raft.Start(conf, raftLogger)
+	conf := cfg.ReadConf()
+	logLevel := conf.LogLevel
+	zerolog.SetGlobalLevel(zerolog.Level(logLevel))
+
+	log.Debug().Msgf("Config: %v", conf)
+
+	raftNode, err := raft.Start(&conf)
 	if err != nil {
+		log.Panic().Msg("Error creating node. Exiting!")
 		os.Exit(1)
 	}
 
 	//TODO: race conditions locks???
 	//dns entrypoint
-	dnsEntrypointLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node:    raftNode,
-		Address: conf.HTTPAddress,
-		Logger:  &dnsEntrypointLogger,
+		Address: conf.DnsAddr,
 	}
-	dnsEntrypoint.StartDnsEntrypoint()
+	log.Info().Msg("Starting DNS entrypoint")
+	dnsEntrypoint.Start()
 
 	//dns api
-	apiLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
-	api := &communication.API{
+	api := &storageApi.API{
 		Node: raftNode,
 		//TODO: address and type from config
-		Address:     conf.HTTPAddress,
+		MetaAddress: conf.MetaApiAddr,
+		DNSAddress:  conf.DnsApiAddr,
 		NetworkType: "udp",
-		Logger:      &apiLogger,
 	}
+	log.Info().Msg("Starting storage API")
 	api.Start()
 
 	healthchecks := loadbalancing.HealthCheck{
-		Nodes:     &raftNode.Fsm.DnsRepo.LbInfo,
+		Nodes:     raftNode.Fsm.DnsRepo.LbInfo,
 		Interval:  30 * 1000,
 		CheckType: loadbalancing.PingCheck,
 	}
+	log.Info().Msg("Starting healthchecks")
 	healthchecks.ScheduleHealthChecks()
 
 	loadbalancing.StartLoadReporting("127.0.0.1:8080")
+	log.Info().Msg("Starting reporting load to loadbalancer")
 
-	httpLogger := *log.New(os.Stdout, "http: ", log.Ltime)
 	service := &communication.HttpServer{
 		Node:    raftNode,
-		Address: conf.HTTPAddress,
-		Logger:  &httpLogger,
+		Address: conf.HttpAddr,
+		UdpPort: conf.UdpPort,
 	}
 	//starts the http service (not in a goroutine so it blocks from exiting)
+	log.Info().Msg("Starting HTTP service")
 	service.Start()
 }

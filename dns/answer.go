@@ -1,14 +1,10 @@
 package dns
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
-var logging *log.Logger
-
-func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, logger *log.Logger, originalMessage []byte) DNSPDU {
-	logging = logger
-
+func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, originalMessage []byte) DNSPDU {
 	// set Response Flag to true
 	request.Flags.QueryResponse = true
 	//Because server can handle recursion
@@ -20,17 +16,20 @@ func CreateAnswer(request DNSPDU, requestedRecords []DNSResourceRecord, logger *
 
 	request.Flags.CheckingDisabled = true
 
-	answer := addResourceRecords(request, requestedRecords, originalMessage)
+	if requestedRecords == nil {
+		//TODO: other response codes
+		request.Flags.ResponseCode = 3
+		return request
+	}
 
+	answer := addAnswerResourceRecords(request, requestedRecords, originalMessage)
 	return answer
 }
 
-func ExtractQuestionHostnames(pdu DNSPDU) []string {
+func ExtractQuestionHostnames(pdu *DNSPDU) []string {
 	hostnames := make([]string, 0)
 
 	for _, question := range pdu.Questions {
-		pdu.Header.TotalAnswerResourceRecords += 1
-
 		domainName := ""
 		for i, part := range question.Labels {
 			domainName += part
@@ -45,17 +44,36 @@ func ExtractQuestionHostnames(pdu DNSPDU) []string {
 	return hostnames
 }
 
-func addResourceRecords(pdu DNSPDU, requestedRecords []DNSResourceRecord, originalMessage []byte) DNSPDU {
+func addAnswerResourceRecords(pdu DNSPDU, requestedRecords []DNSResourceRecord, originalMessage []byte) DNSPDU {
 	for _, rrecord := range requestedRecords{
+		pdu.Header.TotalAnswerResourceRecords += 1
 		pdu.AnswerResourceRecords = append(pdu.AnswerResourceRecords, rrecord)
 	}
 	return pdu
 }
 
 func PrepareToSend(pdu DNSPDU) []byte {
+	// find duplicate labels
+	//if labels are duplicates, insert nil to mark a pointer
+	pdu.AnswerResourceRecords =  checkForPointer(pdu.Questions[0].Labels,pdu.AnswerResourceRecords)
+	pdu.AuthorityResourceRecords =  checkForPointer(pdu.Questions[0].Labels,pdu.AuthorityResourceRecords)
+	pdu.AdditionalResourceRecords = checkForPointer(pdu.Questions[0].Labels,pdu.AdditionalResourceRecords)
+
 	resp, err := pdu.Bytes()
 	if err != nil{
-		logging.Print(err.Error())
+		log.Error().Msgf("Error converting dns response to byte array: %v", err.Error())
 	}
 	return resp
+}
+
+func checkForPointer(originalLabels []string, records []DNSResourceRecord) []DNSResourceRecord{
+	hostname := ConcatRevertLabels(originalLabels, false)
+	for i, record := range records {
+		if hostname == ConcatRevertLabels(record.Labels, true){
+			//TODO: ??
+			record.Labels = []string{"P", "O", "I", "N", "T", "E", "R"}
+		}
+		records[i] = record
+	}
+	return records
 }
