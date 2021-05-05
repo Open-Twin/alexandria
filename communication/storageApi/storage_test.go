@@ -75,10 +75,10 @@ func TestMain(m *testing.M) {
 }
 
 type answerFormat struct {
-	Service string `bson:"Service"`
-	Type string	`bson:"Type"`
-	Key string `bson:"Key"`
-	Value map[string]string `bson:"Value"`
+	Service string `bson:"service"`
+	Type string	`bson:"type"`
+	Key string `bson:"key"`
+	Value map[string]string `bson:"value"`
 }
 
 func SendBsonMessage(address string, msg bson.M) []byte {
@@ -112,8 +112,26 @@ func TestStoreEntryShouldPass(t *testing.T) {
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	log.Print(answerVals)
-	if answerVals.Value["Type"] != "ok" {
+	if answerVals.Value["type"] != "ok" {
 		t.Errorf("Store failed: %s", ans)
+	}
+}
+
+func TestStoreEntryShouldFail(t *testing.T) {
+	msg := bson.M{
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "save",
+		"key" : "voltage",
+		"value" : "3",
+	}
+
+	ans := SendBsonMessage("127.0.0.1:20000",msg)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	log.Print(answerVals)
+	if answerVals.Value["type"] != "error" {
+		t.Errorf("Store should not go through, due to wrong type: %s", ans)
 	}
 }
 
@@ -129,8 +147,26 @@ func TestUpdateEntryShouldPass(t *testing.T) {
 	ans := SendBsonMessage("127.0.0.1:20000",msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
-	if answerVals.Value["Type"] != "ok" {
+	if answerVals.Value["type"] != "ok" {
 		t.Errorf("Update failed: %s", ans)
+	}
+}
+
+func TestUpdateEntryShouldFail(t *testing.T) {
+	msg := bson.M{
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "modify",
+		"key" : "voltage",
+		"value" : "3",
+	}
+
+	ans := SendBsonMessage("127.0.0.1:20000",msg)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	log.Print(answerVals)
+	if answerVals.Value["type"] != "error" {
+		t.Errorf("Update should not go through, due to wrong type: %s", ans)
 	}
 }
 
@@ -146,7 +182,25 @@ func TestDeleteEntryShouldPass(t *testing.T) {
 	ans := SendBsonMessage("127.0.0.1:20000",msg)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
-	if answerVals.Value["Type"] != "ok" {
+	if answerVals.Value["type"] != "ok" {
 		t.Errorf("Delete failed: %s", ans)
+	}
+}
+
+func TestDeleteEntryShouldFail(t *testing.T) {
+	msg := bson.M{
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "remove",
+		"key" : "voltage",
+		"value" : "3",
+	}
+
+	ans := SendBsonMessage("127.0.0.1:20000",msg)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	log.Print(answerVals)
+	if answerVals.Value["type"] != "error" {
+		t.Errorf("Delete should not go through, due to wrong type: %s", ans)
 	}
 }

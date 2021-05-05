@@ -13,14 +13,14 @@ import (
 func CreateMetadataResponse(service, key, etype, value string) []byte{
 
 	valueMap := map[string]string{
-		"Type": etype,
-		"Value": value,
+		"type": etype,
+		"value": value,
 	}
 	response := struct {
-		Service string `bson:"Service"`
-		Type string `bson:"Type"`
-		Key string `bson:"Key"`
-		Value map[string]string `bson:"Value"`
+		Service string `bson:"service"`
+		Type string `bson:"type"`
+		Key string `bson:"key"`
+		Value map[string]string `bson:"value"`
 	}{
 		Service: service,
 		Type: "response",
@@ -42,9 +42,9 @@ func CreateMetadataResponse(service, key, etype, value string) []byte{
 func CreateResponse(domain, etype, value string) []byte{
 
 	response := struct {
-		Domain string
-		Error string
-		Value string
+		Domain string `bson:"domain"`
+		Error string `bson:"error"`
+		Value string `bson:"value"`
 	}{
 		Domain: domain,
 		Error: etype,
@@ -65,14 +65,14 @@ func CreateResponse(domain, etype, value string) []byte{
 func sendHttpResponse(service, key, etype, value string, w http.ResponseWriter){
 
 	valueMap := map[string]string{
-		"Type": etype,
-		"Value": value,
+		"type": etype,
+		"value": value,
 	}
 	response := struct {
-		Service string
-		Type string
-		Key string
-		Value map[string]string
+		Service string `json:"service"`
+		Type string `json:"type"`
+		Key string `json:"key"`
+		Value map[string]string `json:"value"`
 	}{
 		Service: service,
 		Type: "response",

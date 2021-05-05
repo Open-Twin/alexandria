@@ -89,9 +89,9 @@ func TestMain(m *testing.M) {
 }
 
 type answerFormat struct {
-	Domain string
-	Error  string
-	Value  string
+	Domain string `bson:"domain"`
+	Error  string `bson:"error"`
+	Value  string `bson:"value"`
 }
 
 func SendBsonMessage(address string, msg bson.M, t *testing.T) []byte {
@@ -117,11 +117,11 @@ func SendBsonMessage(address string, msg bson.M, t *testing.T) []byte {
 	return answer
 }
 
-func TestStoreEntry(t *testing.T) {
+func TestStoreEntryPass(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "dejan.ac.at",
-		"Ip":          "1.2.3.4",
-		"RequestType": "store",
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "store",
 	}
 
 	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
@@ -132,11 +132,26 @@ func TestStoreEntry(t *testing.T) {
 	}
 }
 
-func TestUpdateEntry(t *testing.T) {
+func TestStoreEntryFail(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "dejan.ac.at",
-		"Ip":          "1.2.3.4",
-		"RequestType": "update",
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "save",
+	}
+
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	if answerVals.Error != "error" {
+		t.Errorf("Store should not go through, due to wrong type: %s", ans)
+	}
+}
+
+func TestUpdateEntryPass(t *testing.T) {
+	msg := bson.M{
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "update",
 	}
 
 	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
@@ -147,11 +162,26 @@ func TestUpdateEntry(t *testing.T) {
 	}
 }
 
-func TestDeleteEntry(t *testing.T) {
+func TestUpdateEntryFail(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "dejan.ac.at",
-		"Ip":          "1.2.3.4",
-		"RequestType": "delete",
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "modify",
+	}
+
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	if answerVals.Error != "error" {
+		t.Errorf("Update should not go through, due to wrong type: %s", ans)
+	}
+}
+
+func TestDeleteEntryPass(t *testing.T) {
+	msg := bson.M{
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "delete",
 	}
 
 	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
@@ -162,11 +192,26 @@ func TestDeleteEntry(t *testing.T) {
 	}
 }
 
+func TestDeleteEntryFail(t *testing.T) {
+	msg := bson.M{
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "remove",
+	}
+
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	if answerVals.Error != "error" {
+		t.Errorf("Delete should not go through, due to wrong type: %s", ans)
+	}
+}
+
 func TestQuery(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "www.ariel.dna",
-		"Ip":          "2.4.8.10",
-		"RequestType": "store",
+		"hostname":    "www.ariel.dna",
+		"ip":          "2.4.8.10",
+		"requestType": "store",
 	}
 	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
 	t.Logf("Storing ariel: %s", ans)
@@ -184,9 +229,9 @@ func TestQuery(t *testing.T) {
 
 func TestDnsNodeDistribution(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "eenie.meenie",
-		"Ip":          "1.1.1.1",
-		"RequestType": "store",
+		"hostname":    "eenie.meenie",
+		"ip":          "1.1.1.1",
+		"requestType": "store",
 	}
 	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
 	ip, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
@@ -198,9 +243,9 @@ func TestDnsNodeDistribution(t *testing.T) {
 	}
 
 	msg = bson.M{
-		"Hostname":    "eenie.meenie",
-		"Ip":          "1.1.1.2",
-		"RequestType": "store",
+		"hostname":    "eenie.meenie",
+		"ip":          "1.1.1.2",
+		"requestType": "store",
 	}
 	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
 	ip, _ = sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
