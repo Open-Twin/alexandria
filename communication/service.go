@@ -45,7 +45,7 @@ func startAutojoinListener(port int){
 		buf := make([]byte, 1024)
 		n,addr,err := pc.ReadFrom(buf)
 		if err != nil {
-			panic(err)
+			log.Error().Msgf("error on reading autojoin response: %s",err.Error())
 		}
 
 		log.Info().Msgf("AUTOJOIN %s sent this: %s\n", addr, buf[:n])
