@@ -58,7 +58,6 @@ func main() {
 	healthchecks.ScheduleHealthChecks()
 
 	loadbalancing.StartLoadReporting(conf.LbIP)
-	log.Info().Msg("Starting reporting load to loadbalancer")
 
 	service := &communication.HttpServer{
 		Node:    raftNode,
