@@ -51,7 +51,7 @@ go test ./...
 
 It should be mentioned that it is also possible to simply run the tests in the IDE, the IDE that we used was GoLand where its pretty simple by just right clicking the file_test.go and pressing "run file_test.go".
 
-## Raft demo
+## Dev Demo
 Author: Sebastian Bruckner-Hrubesch,
 Last updated: 09.02.2021
 
@@ -79,4 +79,4 @@ The supported types are ``store, update, delete, get``.
 In order to send or retrieve data, send a request with your BSON to a server in the cluster.
 An example on how to send BSON data can be found in [alexandria/exampleRequests/launchExamples.go](https://github.com/Open-Twin/alexandria/blob/develop/exampleRequests/launchExamples.go).
 
-For retrieving data, the value does not have to be in the JSON.
+For retrieving data, the value does not have to be in the BSON.
