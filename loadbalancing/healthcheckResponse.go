@@ -30,6 +30,8 @@ func lbRegister(lbUrl string) {
 		if string(body) != "succesfully added" {
 			log.Error().Msgf("Adding node didn't work: %v", string(body))
 		}
+
+		log.Info().Msgf("Registered at loadbalancer")
 	}
 }
 

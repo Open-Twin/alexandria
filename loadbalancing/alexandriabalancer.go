@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -36,15 +37,12 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 
 	// https://gist.github.com/mike-zhang/3853251
 
-	var ipport = 53
-	var isport = 55
-	var ishost = "127.0.0.1"
+	var lbport = 53
 	//	var idrop *float64 = flag.Float64("d", 0.0, "Packet drop rate")
 
-	hostport := fmt.Sprintf("%s:%d", ishost, isport)
-	log.Info().Msgf("Server listening on = %s\n", hostport)
+	log.Info().Msgf("Loadbalancer port: %d\n", lbport)
 
-	if setup(hostport, ipport) {
+	if setup(lbport) {
 		lb.runProxy()
 	}
 }
@@ -67,9 +65,12 @@ func (lb *AlexandriaBalancer) startSignupEndpoint() {
 func (lb *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.Request) {
 	ip := r.RemoteAddr
 
+	// remove port from ip
+	ip = ip[0:strings.LastIndex(ip, ":")]
+
 	lb.lock.Lock()
 	lb.nodes[ip] = dns.NodeHealth{
-		Healthy:     false,
+		Healthy:     true,
 		Connections: 0,
 	}
 	lb.lock.Unlock()
@@ -109,7 +110,7 @@ var ClientDict = make(map[string]*Connection)
 // Mutex used to serialize access to the dictionary
 var dmutex = new(sync.Mutex)
 
-func setup(hostport string, port int) bool {
+func setup(port int) bool {
 	// Set up Proxy
 	saddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
 	if checkreport(1, err) {
@@ -120,15 +121,8 @@ func setup(hostport string, port int) bool {
 		return false
 	}
 	ProxyConn = pudp
-	log.Info().Msgf("Proxy serving on port %d\n", port)
+	log.Info().Msgf("Loadbalancer listening on port %d\n", port)
 
-	// Get server address
-	srvaddr, err := net.ResolveUDPAddr("udp", hostport)
-	if checkreport(1, err) {
-		return false
-	}
-	ServerAddr = srvaddr
-	log.Info().Msgf("Connected to server at %s\n", hostport)
 	return true
 }
 
@@ -170,7 +164,7 @@ func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 	for ip, health := range lb.nodes {
 		if i == lb.pointer && health.Healthy == true {
 			return &net.UDPAddr{
-				Port: ServerAddr.Port,
+				Port: lb.DnsPort,
 				IP:   net.ParseIP(ip),
 			}
 		} else {
@@ -185,7 +179,7 @@ func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 	lb.pointer = i
 
 	return &net.UDPAddr{
-		Port: ServerAddr.Port,
+		Port: lb.DnsPort,
 		IP:   net.ParseIP("127.0.0.1"),
 	}
 }
@@ -204,6 +198,7 @@ func (lb *AlexandriaBalancer) runProxy() {
 		conn, found := ClientDict[saddr]
 
 		ServerAddr = lb.nextAddr()
+		log.Info().Msgf("Forwarding node to %s", ServerAddr.String())
 
 		if !found {
 			conn = NewConnection(ServerAddr, cliaddr)
