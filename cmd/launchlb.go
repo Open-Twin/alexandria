@@ -14,7 +14,7 @@ func main() {
 
 	loadbalancer := loadbalancing.AlexandriaBalancer{
 		DnsPort:             53,
-		HealthCheckInterval: 30 * 1000,
+		HealthCheckInterval: 7 * 1000,
 	}
 	loadbalancer.StartAlexandriaLoadbalancer()
 }

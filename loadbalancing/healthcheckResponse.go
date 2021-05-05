@@ -11,7 +11,7 @@ func StartLoadReporting(lbUrl string) {
 	lbRegister(lbUrl)
 
 	http.HandleFunc("/health", sendLoad)
-	go http.ListenAndServe(":8000", nil)
+	go http.ListenAndServe(":8080", nil)
 	log.Info().Msg("Started reporting alexandria server load")
 }
 
