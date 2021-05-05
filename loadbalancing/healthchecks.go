@@ -53,7 +53,7 @@ func (hc *HealthCheck) loopNodes() {
 }
 
 func sendHttpCheck(ip string, node *dns.NodeHealth) {
-	resp, err := http.Get("http://" + ip + ":8080/health/")
+	resp, err := http.Get("http://" + ip + ":8080/health")
 	if err != nil {
 		node.Healthy = false
 		log.Info().Msgf("Node %s could not be reached: %s\n", ip, err)

@@ -52,24 +52,24 @@ func (api *API) Start() {
 	})
 }
 
-func forwardToLeader(eventBytes []byte, leaderAddr string, port int) ([]byte, error){
-	addr := strings.Split(leaderAddr,":")[0]
+func forwardToLeader(eventBytes []byte, leaderAddr string, port int) ([]byte, error) {
+	addr := strings.Split(leaderAddr, ":")[0]
 	leader := addr + ":" + strconv.Itoa(port)
-	log.Info().Msg("forwarding request to leader: "+leader)
+	log.Info().Msg("forwarding request to leader: " + leader)
 	con, err := net.Dial("udp", leader)
-	defer con.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer con.Close()
 	//write to leader
 	_, err = con.Write(eventBytes)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	//read answer
-	p :=  make([]byte, 2048)
+	p := make([]byte, 2048)
 	_, err = bufio.NewReader(con).Read(p)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	log.Info().Msgf("Request forwarded to leader %s", leader)
