@@ -56,6 +56,23 @@ curl -XGET -d @testreq.json -H "Content-Type: application/json" http://127.0.0.1
 ```
 For retrieving data, the value does not have to be in the JSON.
 
+## Sending Requests
+
+A quick guide on how to send requests to our DNS, or more preciously our API, may be helpful.
+The communication is over bson, which stands for binary json. For those who aren't familiary with bson, it is basically json in its binary format.
+Both meta and DNS request are handled over bson to maximaze the performance of our system.
+
+The following json is an example request that can be used to either store, update or delete an entry:
+```json
+{
+  "service": "{service}",
+  "type": "{type}",
+  "key": "{key}",
+  "value": "{value}",
+}
+```
+An example code on how to send request can be found in **alexandria/exampleRequests/launchExamples.go**.
+
 ## Testing
 
 Executing the tests can be done in two different ways.
