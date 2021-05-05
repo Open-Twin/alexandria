@@ -64,7 +64,7 @@ func queryDnsRepo(hostnames []string, api *DnsEntrypoint) []dns.DNSResourceRecor
 					logging.Print(recErr.Error())
 				}
 			}*/
-			log.Warn().Msgf("Reqeusted domain not available: %s", hostname)
+			log.Warn().Msgf("Requested domain not available: %s", hostname)
 			return nil
 		}else{
 			array = append(array, query)
