@@ -3,18 +3,18 @@ A simple distributed, redundant, error correcting DNS server
 
 ## Start the DNS
 
-To start a single DNS node simply direct youself to **alexandria/deployments/** then open the terminal in this path, start the node with:
+To start a single DNS node simply direct youself to **alexandria/deployments/** then open the terminal in this path, to start the node simply write:
 ```shell
 docker-compose up
 ```
-In the .env it is possible to set certain settings like the addresses and ports an example would be:
+In the .env it is possible to set certain settings like the addresses and ports for the node, an example would be:
 ```config
 RAFT_ADDR=10.5.0.2
 HTTP_ADDR=0.0.0.0
 RAFT_PORT=7000
 HTTP_PORT=8000
 ```
-In the following section about the **Raft demo** it can be witnessed that a another docker-compose.yml will be started to test the raft functionality.
+In the following section about the **Raft demo** it can be witnessed that a another docker-compose.yml will be started to test the raft functionality, where three nodes are started at the same time (1 Leader and 2 Followers).
 
 ## Raft demo
 Author: Sebastian Bruckner-Hrubesch,
