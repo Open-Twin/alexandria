@@ -40,3 +40,21 @@ In order to retrieve data from the cluster (get), send a GET request:
 curl -XGET -d @testreq.json -H "Content-Type: application/json" http://127.0.0.1:8001/key
 ```
 For retrieving data, the value does not have to be in the JSON.
+
+## Testing
+
+Executing the tests can be done in two different ways.
+Firstly it is possible to choose a certain test.go file and see its outcome by using the following command in the cmd:
+```shell
+go test file_test.go
+```
+Important to mention is that you'd need to be in the right directory otherwise you'd need to enter the path in the command like following:
+```shell
+go test src/tests/file_test.go
+```
+Lastly it is also possible to run all the tests at once by using:
+```shell
+go test ./...
+```
+
+It should be mentioned that it is also possible to simply run the tests in the IDE, the IDE that we used was GoLand where its pretty simple by just right clicking the file_test.go and pressing "run file_test.go".
