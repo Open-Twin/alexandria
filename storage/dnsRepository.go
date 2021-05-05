@@ -106,9 +106,12 @@ func (imsp *StorageRepository) Delete(hostname, ip string) error {
 		imsp.mutex.Lock()
 		defer imsp.mutex.Unlock()
 		delete(imsp.Entries[hostname], ip)
+		if len(imsp.Entries[hostname]) == 0 {
+			delete(imsp.Entries, hostname)
+		}
 		delete(imsp.LbInfo, ip)
 	} else {
-		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong, to delete the entry")
+		return errors.New("wrong argument: probably one of the given arguments is either non existing or wrong to delete the entry")
 	}
 	return nil
 }

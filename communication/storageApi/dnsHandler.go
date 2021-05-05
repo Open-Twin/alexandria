@@ -29,9 +29,9 @@ func handleDnsData(buf []byte, node *raft.Node) []byte {
 	}
 
 	request := struct {
-		Hostname    string `bson:"Hostname"`
-		Ip          string `bson:"Ip"`
-		RequestType string `bson:"RequestType"`
+		Hostname    string `bson:"hostname"`
+		Ip          string `bson:"ip"`
+		RequestType string `bson:"requestType"`
 	}{}
 	if err := bson.Unmarshal(buf, &request); err != nil {
 		log.Error().Msgf("Bad request: %v", err.Error())
@@ -55,20 +55,21 @@ func handleDnsData(buf []byte, node *raft.Node) []byte {
 	if err != nil {
 		log.Error().Msg("unexpected failure")
 	}
-
 	//Apply to Raft cluster
 	applyFuture := node.RaftNode.Apply(eventBytes, 5*time.Second)
-	/*
-		if reflect.TypeOf(applyFuture).Kind() == reflect.TypeOf(errors.New("aris sohn")).Kind() {
-			// TODO: Cleanup errors
-			logger.Println("could not apply to raft cluster" + applyFuture.Error().Error())
-			return createResponse("","error","something went wrong. please check your input.")
-		}*/
-
 	if err := applyFuture.Error(); err != nil {
 		log.Error().Msgf("could not apply to raft cluster: %v", err.Error())
 		return communication.CreateResponse("", "error","something went wrong. please check your input")
 	}
+	if applyResp := applyFuture.Response(); applyResp != nil {
+		switch v := applyResp.(type) {
+		case error:
+			log.Debug().Msgf("apply failed because of type %s",v.Error())
+			log.Error().Msgf("could not apply to raft cluster: %v", applyResp.(error).Error())
+			return communication.CreateResponse("", "error","something went wrong. please check your input")
+		}
+	}
+
 	var resp []byte
 	if err != nil {
 		resp = communication.CreateResponse("", "error", "something went wrong. please check your input.")

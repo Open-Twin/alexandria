@@ -32,12 +32,12 @@ func sendBsonMessage(address string, msg bson.M) {
 	if err != nil {
 		log.Printf("Error on receiving answer: %v", err)
 	} else {
-		log.Printf("Answer:\n%s\n", answer)
+		log.Printf("Answer:\n %s \n", answer)
 	}
 }
 
 func sendDnsEntry() {
-	address := "127.0.0.1:10000"
+	address := "127.0.0.1:10002"
 	/*msg := bson.M{
 		"Labels":             []string{"at", "ac", "dejan"},
 		"Type":               uint16(60),
@@ -48,9 +48,9 @@ func sendDnsEntry() {
 		"RequestType":		  "store",
 	}*/
 	msg := bson.M{
-		"Hostname":    os.Args[2],
-		"Ip":          os.Args[3],
-		"RequestType": "store",
+		"hostname":    os.Args[2],
+		"ip":          os.Args[3],
+		"requestType": os.Args[4],
 	}
 
 	sendBsonMessage(address, msg)

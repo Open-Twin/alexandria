@@ -1,10 +1,8 @@
 package communication
 
 import (
-	"fmt"
 	"log"
 	"net"
-	"strconv"
 )
 
 type UDPServer struct {
@@ -44,7 +42,6 @@ func listen(connection *net.UDPConn, handler UDPHandler, quit chan struct{}) {
 	n, remoteAddr, err := 0, new(net.UDPAddr), error(nil)
 	for err == nil {
 		n, remoteAddr, err = connection.ReadFromUDP(buffer)
-		fmt.Println("KOKOSNUSS: " + strconv.Itoa(n))
 		go handleData(n, buffer, handler, remoteAddr, connection)
 		// you might copy out the contents of the packet here, to
 		// `var r myapp.Request`, say, and `go handleRequest(r)` (or

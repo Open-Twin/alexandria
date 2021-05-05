@@ -13,11 +13,11 @@ import (
 
 func handleMetadata(buf []byte, node *raft.Node) []byte {
 	request := struct {
-		Service string `bson:"Service"`
-		Ip      string `bson:"Ip"`
-		Type    string `bson:"Type"`
-		Key     string `bson:"Key"`
-		Value   string `bson:"Value"`
+		Service string `bson:"service"`
+		Ip      string `bson:"ip"`
+		Type    string `bson:"type"`
+		Key     string `bson:"key"`
+		Value   string `bson:"value"`
 	}{}
 
 	if err := bson.Unmarshal(buf, &request); err != nil {
@@ -63,6 +63,15 @@ func handleMetadata(buf []byte, node *raft.Node) []byte {
 		log.Error().Msgf("could not apply to raft cluster: %v", err.Error())
 		return communication.CreateMetadataResponse(request.Service, request.Key, "error", err.Error())
 	}
+	if applyResp := applyFuture.Response(); applyResp != nil {
+		switch v := applyResp.(type) {
+		case error:
+			log.Debug().Msgf("apply failed because of type %s",v.Error())
+			log.Error().Msgf("could not apply to raft cluster: %v", applyResp.(error).Error())
+			return communication.CreateMetadataResponse(request.Service, request.Key, "error", applyResp.(error).Error())
+		}
+	}
+
 	var resp []byte
 	if err != nil {
 		resp = communication.CreateMetadataResponse(request.Service, request.Key, "error", "something went wrong. please check your input.")

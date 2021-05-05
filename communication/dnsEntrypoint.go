@@ -39,7 +39,7 @@ func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 	hostnames := dns.ExtractQuestionHostnames(&pdu)
 
 	requestedRecords := queryDnsRepo(hostnames, api)
-
+	log.Debug().Msgf("requested records: %s", requestedRecords)
 	answer := dns.CreateAnswer(pdu, requestedRecords, buf)
 
 	log.Debug().Msgf("Answer Header: %v\n", answer.Header)
@@ -64,7 +64,7 @@ func queryDnsRepo(hostnames []string, api *DnsEntrypoint) []dns.DNSResourceRecor
 					logging.Print(recErr.Error())
 				}
 			}*/
-			log.Warn().Msgf("Reqeusted domain not available: %s", hostname)
+			log.Warn().Msgf("Requested domain not available: %s", hostname)
 			return nil
 		}else{
 			array = append(array, query)

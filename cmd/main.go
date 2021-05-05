@@ -25,11 +25,10 @@ func main() {
 
 	raftNode, err := raft.Start(&conf)
 	if err != nil {
-		log.Panic().Msg("Error creating node. Exiting!")
+		log.Panic().Msgf("Error creating node: %s. Exiting!", err.Error())
 		os.Exit(1)
 	}
 
-	//TODO: race conditions locks???
 	//dns entrypoint
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node:    raftNode,
@@ -41,7 +40,6 @@ func main() {
 	//dns api
 	api := &storageApi.API{
 		Node: raftNode,
-		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
 		DNSAddress:  conf.DnsApiAddr,
 		NetworkType: "udp",

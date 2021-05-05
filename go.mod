@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/go-ping/ping v0.0.0-20210216210419-25d1413fb7bb
 	github.com/go-playground/validator/v10 v10.4.1
+	github.com/hashicorp/go-hclog v0.12.2
 	github.com/hashicorp/raft v1.2.0
 	github.com/hashicorp/raft-boltdb v0.0.0-20171010151810-6e5ba93211ea
 	github.com/kr/pretty v0.1.0 // indirect

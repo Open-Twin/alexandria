@@ -2,7 +2,6 @@ package communication
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/Open-Twin/alexandria/raft"
 	raftlib "github.com/hashicorp/raft"
 	"github.com/rs/zerolog/log"
@@ -33,11 +32,10 @@ func (server *HttpServer) Start() {
 }
 
 func startAutojoinListener(port int){
-	//TODO: use udp endpoint
-	log.Print("PORT:"+strconv.Itoa(port))
-	//TODO: autojoin port
+	//log.Print("autojoin port:"+strconv.Itoa(port))
 	pc, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
+		//TODO panic
 		panic(err)
 	}
 	//pc.Close()
@@ -45,10 +43,10 @@ func startAutojoinListener(port int){
 		buf := make([]byte, 1024)
 		n,addr,err := pc.ReadFrom(buf)
 		if err != nil {
-			panic(err)
+			log.Error().Msgf("error on reading autojoin response: %s",err.Error())
 		}
 
-		log.Printf("AUTOJOIN %s sent this: %s\n", addr, buf[:n])
+		log.Info().Msgf("AUTOJOIN %s sent this: %s\n", addr, buf[:n])
 		pc.WriteTo([]byte("AJ APPROVE"), addr)
 	}
 }
@@ -58,9 +56,8 @@ Differentiates between /key and /join requests and forwards them to
 the appropriate function
  */
 func (server *HttpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	if strings.Contains(r.URL.Path, "/join") {
-		fmt.Println("JOIN REQUEST")
+		log.Info().Msgf("received join request from %s", r.RemoteAddr)
 		server.handleJoin(w, r)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
@@ -94,6 +91,7 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 
 	log.Info().Msgf("Peer joined Raft with Address %v\n",peerAddress)
 	w.WriteHeader(http.StatusOK)
