@@ -65,7 +65,7 @@ func handleDnsData(buf []byte, node *raft.Node) []byte {
 		switch v := applyResp.(type) {
 		case error:
 			log.Debug().Msgf("apply failed because of type %s",v.Error())
-			log.Error().Msgf("could not apply to raft cluster: %v", err.Error())
+			log.Error().Msgf("could not apply to raft cluster: %v", applyResp.(error).Error())
 			return communication.CreateResponse("", "error","something went wrong. please check your input")
 		}
 	}
