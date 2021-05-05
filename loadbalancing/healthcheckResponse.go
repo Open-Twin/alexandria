@@ -4,7 +4,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -17,11 +16,7 @@ func StartLoadReporting(lbUrl string) {
 }
 
 func lbRegister(lbUrl string) {
-	data := url.Values{
-		"ip": {"127.0.0.1"},
-	}
-
-	resp, err := http.PostForm("http://"+lbUrl+"/signup", data)
+	resp, err := http.Get("http://" + lbUrl + "/signup")
 	if err != nil {
 		log.Error().Msgf("Registration at loadbalancer failed: %v", err)
 	} else {

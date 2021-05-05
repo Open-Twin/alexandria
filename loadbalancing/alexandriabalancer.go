@@ -42,7 +42,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	//	var idrop *float64 = flag.Float64("d", 0.0, "Packet drop rate")
 
 	hostport := fmt.Sprintf("%s:%d", ishost, isport)
-	log.Info().Msgf("Proxy port = %d, Server address = %s\n", ipport, hostport)
+	log.Info().Msgf("Server listening on = %s\n", hostport)
 
 	if setup(hostport, ipport) {
 		lb.runProxy()
@@ -65,12 +65,7 @@ func (lb *AlexandriaBalancer) startSignupEndpoint() {
 }
 
 func (lb *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	if len(r.Form) == 0 {
-		log.Error().Msgf("Reqeust without params")
-		return
-	}
-	ip := r.Form["ip"][0]
+	ip := r.RemoteAddr
 
 	lb.lock.Lock()
 	lb.nodes[ip] = dns.NodeHealth{
@@ -79,6 +74,7 @@ func (lb *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.R
 	}
 	lb.lock.Unlock()
 
+	log.Info().Msgf("Node %s added", ip)
 	w.Write([]byte("succesfully added"))
 }
 
