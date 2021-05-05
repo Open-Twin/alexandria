@@ -8,7 +8,7 @@ services:
     volumes:
       - ../:/go/src/go-with-compose
     working_dir: /go/src/go-with-compose
-    command: go run ./cmd/
+    command: go run ./cmd/main.go
     env_file: ../cfg/config.env
     ports:
     - "8000:8000"
