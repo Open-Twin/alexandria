@@ -71,7 +71,7 @@ The following json is an example request that can be used to either store, updat
   "value": "{value}",
 }
 ```
-An example code on how to send request can be found in [alexandria/exampleRequests/launchExamples.go](alexandria/exampleRequests/launchExamples.go).
+An example code on how to send request can be found in [https://github.com/Open-Twin/alexandria/blob/develop/exampleRequests/launchExamples.go](alexandria/exampleRequests/launchExamples.go).
 
 ## Testing
 
