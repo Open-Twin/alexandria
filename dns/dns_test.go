@@ -193,12 +193,10 @@ func TestDnsNodeDistribution(t *testing.T) {
 		"RequestType": "store",
 	}
 	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
-	ip, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
-	if len(ip) < 1 {
-		t.Errorf("No ip returned.")
-	}
-	if !reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 1}) {
-		t.Errorf("Loadbalancer returned %s instead of 1.1.1.2", ip)
+	ip1, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
+	if len(ip1) < 1 {
+		t.Error("No ip returned 1.")
+		return
 	}
 
 	msg = bson.M{
@@ -207,9 +205,14 @@ func TestDnsNodeDistribution(t *testing.T) {
 		"RequestType": "store",
 	}
 	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
-	ip, _ = sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
-	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 2}) {
-		t.Errorf("Loadbalancer returned %s instead of 1.1.1.2", ip)
+	ip2, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
+	if len(ip2) < 1 {
+		t.Error("No ip returned 2.")
+		return
+	}
+
+	if reflect.DeepEqual(ip1[0], ip2[0]) {
+		t.Errorf("Same ip was returned two times! %s and %s", ip1[0], ip2[0])
 	}
 }
 
