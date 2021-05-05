@@ -32,9 +32,7 @@ func (server *HttpServer) Start() {
 }
 
 func startAutojoinListener(port int){
-	//TODO: use udp endpoint
-	log.Print("PORT:"+strconv.Itoa(port))
-	//TODO: autojoin port
+	//log.Print("autojoin port:"+strconv.Itoa(port))
 	pc, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		//TODO panic
@@ -45,7 +43,7 @@ func startAutojoinListener(port int){
 		buf := make([]byte, 1024)
 		n,addr,err := pc.ReadFrom(buf)
 		if err != nil {
-			panic(err)
+			log.Error().Msgf("error on reading autojoin response: %s",err.Error())
 		}
 
 		log.Info().Msgf("AUTOJOIN %s sent this: %s\n", addr, buf[:n])
@@ -93,6 +91,7 @@ func (server *HttpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 
 	log.Info().Msgf("Peer joined Raft with Address %v\n",peerAddress)
 	w.WriteHeader(http.StatusOK)
