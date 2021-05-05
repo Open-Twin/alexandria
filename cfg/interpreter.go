@@ -19,7 +19,7 @@ type rawConfig struct {
 	HealthcheckInterval int    `validate:"required,min=1000"`
 	HttpAddr            string `validate:"required,ipv4"`
 	RaftAddr            string `validate:"required,ipv4"`
-	JoinAddr            string `validate:"required,ipv4"`
+	JoinAddr            string `validate:"omitempty,ipv4"`
 	MetaApiAddr         string `validate:"required,ipv4"`
 	DnsApiAddr          string `validate:"required,ipv4"`
 	DnsAddr             string `validate:"required,ipv4"`
@@ -56,7 +56,7 @@ func ReadConf() Config {
 		LOG_LEVEL            = "LOG_LEVEL"
 		DATA_DIR             = "DATA_DIR"
 		BOOTSTRAP            = "BOOTSTRAP"
-		AUTO_JOIN            = "AUTO_JOIN"
+		AUTO_JOIN            = "AUTOJOIN"
 		HEALTHCHECK_INTERVAL = "HEALTHCHECK_INTERVAL"
 		HTTP_ADDR            = "HTTP_ADDR"
 		RAFT_ADDR            = "RAFT_ADDR"
@@ -300,7 +300,7 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 		log.Warn().Msgf("Using default value for %s istead: %s\n", "DnsApiAddr", DnsApiAddr)
 		conf.DnsApiAddr = DnsApiAddr
 	case "DnsAddr":
-		log.Warn().Msgf("Using default value for %s istead: %s\n", "DnsApiAddr", DnsAddr)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "DnsAddr", DnsAddr)
 		conf.DnsAddr = DnsAddr
 	case "JoinAddr":
 		log.Warn().Msgf("Using default value for %s istead: %s\n", "JoinAddr", JoinAddr)
@@ -318,7 +318,7 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 		log.Warn().Msgf("Using default value for %s istead: %v\n", "DnsApiPort", DnsApiPort)
 		conf.DnsApiPort = DnsApiPort
 	case "DnsPort":
-		log.Warn().Msgf("Using default value for %s istead: %v\n", "DnsApiPort", DnsPort)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "DnsPort", DnsPort)
 		conf.DnsPort = DnsPort
 	case "UdpPort":
 		log.Warn().Msgf("Using default value for %s istead: %v\n", "UdpPort", UdpPort)

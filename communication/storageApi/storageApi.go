@@ -57,10 +57,10 @@ func forwardToLeader(eventBytes []byte, leaderAddr string, port int) ([]byte, er
 	leader := addr + ":" + strconv.Itoa(port)
 	log.Info().Msg("forwarding request to leader: "+leader)
 	con, err := net.Dial("udp", leader)
-	defer con.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer con.Close()
 	//write to leader
 	_, err = con.Write(eventBytes)
 	if err != nil{
