@@ -2,9 +2,9 @@ package dns_test
 
 import (
 	"context"
-	"fmt"
 	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
+	"github.com/Open-Twin/alexandria/communication/storageApi"
 	"github.com/Open-Twin/alexandria/raft"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -22,8 +22,6 @@ const entrypointAddr = "127.0.0.1"
 const entrypointPort = 10002
 
 func TestMain(m *testing.M) {
-	logger := log.New(os.Stdout, "", log.Ltime)
-
 	raftaddr := net.TCPAddr{
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: 7001,
@@ -33,10 +31,12 @@ func TestMain(m *testing.M) {
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: 8001,
 	}
+
 	dnsaddr := net.TCPAddr{
 		IP:   net.ParseIP(entrypointAddr),
 		Port: entrypointPort,
 	}
+
 	dnsapiaddr := net.TCPAddr{
 
 		IP:   net.ParseIP(apiAddr),
@@ -55,35 +55,31 @@ func TestMain(m *testing.M) {
 		DnsApiAddr:          dnsapiaddr,
 		DnsAddr:             dnsaddr,
 	}
-	node, err := raft.NewInMemNodeForTesting(&conf, logger)
+	node, err := raft.NewInMemNodeForTesting(&conf)
 	if err != nil {
-		log.Fatal("Preparing tests failed: " + err.Error())
+		log.Printf("Error Creating InMemoryNodeForTesting: %v", err.Error())
 	}
+
 	/*s := communication.HttpServer{
 		Node: node,
 		Address: httpaddr,
-		Logger: logger,
 	}
 	go s.Start()*/
 
 	//dns entrypoint
-	dnsEntrypointLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node:    node,
 		Address: conf.DnsAddr,
-		Logger:  &dnsEntrypointLogger,
 	}
 	dnsEntrypoint.Start()
 
 	//dns api
-	dnsApiLogger := *log.New(os.Stdout, "dns: ", log.Ltime)
-	dnsApi := &communication.API{
+	dnsApi := &storageApi.API{
 		Node: node,
 		//TODO: address and type from config
 		MetaAddress: conf.MetaApiAddr,
 		DNSAddress:  conf.DnsApiAddr,
 		NetworkType: "udp",
-		Logger:      &dnsApiLogger,
 	}
 	go dnsApi.Start()
 	time.Sleep(5 * time.Second)
@@ -93,42 +89,42 @@ func TestMain(m *testing.M) {
 }
 
 type answerFormat struct {
-	Domain string
-	Error  string
-	Value  string
+	Domain string `bson:"domain"`
+	Error  string `bson:"error"`
+	Value  string `bson:"value"`
 }
 
-func SendBsonMessage(address string, msg bson.M) []byte {
+func SendBsonMessage(address string, msg bson.M, t *testing.T) []byte {
 	conn, err := net.Dial("udp", address)
 	defer conn.Close()
 	if err != nil {
-		fmt.Printf("Error on establishing connection: %s\n", err)
+		t.Errorf("Error on establishing connection: %s\n", err)
 	}
 	sendMsg, _ := bson.Marshal(msg)
 
 	conn.Write(sendMsg)
-	fmt.Printf("Message sent: %s\n", sendMsg)
+	t.Logf("Message sent: %s\n", sendMsg)
 
 	answer := make([]byte, 2048)
 	_, err = conn.Read(answer)
 
 	if err != nil {
-		fmt.Printf("Error on receiving answer: %v", err.Error())
+		t.Errorf("Error on receiving answer: %v", err.Error())
 	} else {
-		fmt.Printf("Answer:\n%s\n", answer)
+		t.Logf("Answer:\n%s\n", answer)
 	}
 
 	return answer
 }
 
-func TestStoreEntry(t *testing.T) {
+func TestStoreEntryPass(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "dejan.ac.at",
-		"Ip":          "1.2.3.4",
-		"RequestType": "store",
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "store",
 	}
 
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -136,14 +132,29 @@ func TestStoreEntry(t *testing.T) {
 	}
 }
 
-func TestUpdateEntry(t *testing.T) {
+func TestStoreEntryFail(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "dejan.ac.at",
-		"Ip":          "1.2.3.4",
-		"RequestType": "update",
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "save",
 	}
 
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	if answerVals.Error != "error" {
+		t.Errorf("Store should not go through, due to wrong type: %s", ans)
+	}
+}
+
+func TestUpdateEntryPass(t *testing.T) {
+	msg := bson.M{
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "update",
+	}
+
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -151,14 +162,29 @@ func TestUpdateEntry(t *testing.T) {
 	}
 }
 
-func TestDeleteEntry(t *testing.T) {
+func TestUpdateEntryFail(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "dejan.ac.at",
-		"Ip":          "1.2.3.4",
-		"RequestType": "delete",
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "modify",
 	}
 
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	if answerVals.Error != "error" {
+		t.Errorf("Update should not go through, due to wrong type: %s", ans)
+	}
+}
+
+func TestDeleteEntryPass(t *testing.T) {
+	msg := bson.M{
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "delete",
+	}
+
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
 	answerVals := answerFormat{}
 	bson.Unmarshal(ans, &answerVals)
 	if answerVals.Error != "ok" {
@@ -166,14 +192,29 @@ func TestDeleteEntry(t *testing.T) {
 	}
 }
 
+func TestDeleteEntryFail(t *testing.T) {
+	msg := bson.M{
+		"hostname":    "dejan.ac.at",
+		"ip":          "1.2.3.4",
+		"requestType": "remove",
+	}
+
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	answerVals := answerFormat{}
+	bson.Unmarshal(ans, &answerVals)
+	if answerVals.Error != "error" {
+		t.Errorf("Delete should not go through, due to wrong type: %s", ans)
+	}
+}
+
 func TestQuery(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "www.ariel.dna",
-		"Ip":          "2.4.8.10",
-		"RequestType": "store",
+		"hostname":    "www.ariel.dna",
+		"ip":          "2.4.8.10",
+		"requestType": "store",
 	}
-	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
-	log.Printf("Storing ariel: %s", ans)
+	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	t.Logf("Storing ariel: %s", ans)
 
 	ips, err := sendDig("www.ariel.dna", entrypointAddr+":"+strconv.Itoa(entrypointPort))
 	if err != nil {
@@ -188,31 +229,28 @@ func TestQuery(t *testing.T) {
 
 func TestDnsNodeDistribution(t *testing.T) {
 	msg := bson.M{
-		"Hostname":    "eenie.meenie",
-		"Ip":          "1.1.1.1",
-		"RequestType": "store",
+		"hostname":    "eenie.meenie",
+		"ip":          "1.1.1.1",
+		"requestType": "store",
 	}
-	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
-	ip1, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
-	if len(ip1) < 1 {
-		t.Error("No ip returned 1.")
-		return
+	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	ip, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
+	if len(ip) < 1 {
+		t.Errorf("No ip returned.")
+	}
+	if !reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 1}) {
+		t.Errorf("Loadbalancer returned %s instead of 1.1.1.2", ip)
 	}
 
 	msg = bson.M{
-		"Hostname":    "eenie.meenie",
-		"Ip":          "1.1.1.2",
-		"RequestType": "store",
+		"hostname":    "eenie.meenie",
+		"ip":          "1.1.1.2",
+		"requestType": "store",
 	}
-	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg)
-	ip2, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
-	if len(ip2) < 1 {
-		t.Error("No ip returned 2.")
-		return
-	}
-
-	if reflect.DeepEqual(ip1[0], ip2[0]) {
-		t.Errorf("Same ip was returned two times! %s and %s", ip1[0], ip2[0])
+	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	ip, _ = sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
+	if reflect.DeepEqual(ip[0], net.IP{1, 1, 1, 2}) {
+		t.Errorf("Loadbalancer returned %s instead of 1.1.1.2", ip)
 	}
 }
 

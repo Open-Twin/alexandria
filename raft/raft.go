@@ -2,12 +2,15 @@ package raft
 
 import (
 	"github.com/Open-Twin/alexandria/cfg"
+	"github.com/Open-Twin/alexandria/plugins"
 	"github.com/Open-Twin/alexandria/storage"
 	"github.com/hashicorp/raft"
 	bolt "github.com/hashicorp/raft-boltdb"
-	"log"
+	"github.com/rs/zerolog/log"
+	"io"
+
+	//stdlog "log"
 	"net"
-	"os"
 	"path/filepath"
 	"time"
 )
@@ -18,16 +21,21 @@ type Node struct {
 	Config   *cfg.Config
 	RaftNode *raft.Raft
 	Fsm      *Fsm
-	logger   *log.Logger
 }
 
 /*
 creates and returns a new node
 */
-func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
+func NewNode(config *cfg.Config) (*Node, error){
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddr.String())
-	//raftConfig.Logger = log.New(logger, "", 0)
+
+	//TODO: logger
+	//raftLogger := log.With().Str("component", "raft-node").Logger()
+	logi := plugins.Logger{}
+
+	raftConfig.Logger = logi
+	//logAdapter := plugins.NewDefaultSink(raftLogger)
 
 	metarepo := storage.NewInMemoryStorageRepository()
 	dnsrepo := storage.NewInMemoryDNSStorageRepository()
@@ -44,12 +52,13 @@ func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
 	if err != nil {
 		return nil, err
 	}
-	snapshotStoreLogger := log.Writer()
+	snapshotStoreLogger := log.With().Str("component", "raft-snapshots").Logger()
 	snapshotStore, err := raft.NewFileSnapshotStore(config.DataDir,1,snapshotStoreLogger)
 	if err != nil {
 		return nil, err
 	}
-	transport, err := newTransport(config, logger)
+	transportLogger := log.With().Str("component", "raft-transport").Logger()
+	transport, err := newTransport(config, transportLogger)
 	if err != nil {
 		return nil, err
 	}
@@ -67,12 +76,11 @@ func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
 			},
 		}
 		raftNode.BootstrapCluster(configuration)
-		logger.Print("bootstrapping cluster")
+		log.Info().Msg("bootstrapping cluster")
 	}
 	return &Node{
 		Config:   config,
 		RaftNode: raftNode,
-		logger:   logger,
 		Fsm:      fsm,
 	}, nil
 }
@@ -81,7 +89,7 @@ func NewNode(config *cfg.Config, logger *log.Logger) (*Node, error){
 Creates a new node but without persistent storage
 only for tests
  */
-func NewInMemNodeForTesting(config *cfg.Config, logger *log.Logger) (*Node, error){
+func NewInMemNodeForTesting(config *cfg.Config) (*Node, error){
 
 	raftConfig := raft.DefaultConfig()
 	raftConfig.LocalID = raft.ServerID(config.RaftAddr.String())
@@ -115,26 +123,23 @@ func NewInMemNodeForTesting(config *cfg.Config, logger *log.Logger) (*Node, erro
 			},
 		}
 		raftNode.BootstrapCluster(configuration)
-		logger.Print("bootstrapping cluster")
+		log.Info().Msg("bootstrapping cluster")
 	}
 	return &Node{
 		Config:   config,
 		RaftNode: raftNode,
-		logger:   logger,
 		Fsm:      fsm,
 	}, nil
 }
 /*
 creates a new tcp transport for raft
  */
-func newTransport(config *cfg.Config, logger *log.Logger) (*raft.NetworkTransport, error){
+func newTransport(config *cfg.Config, logger io.Writer) (*raft.NetworkTransport, error){
 	address, err := net.ResolveTCPAddr("tcp",config.RaftAddr.String())
 	if err != nil {
 		return nil, err
 	}
-
-	//TODO Logger statt stdout
-	transport, err := raft.NewTCPTransport(address.String(), nil, 3, 10*time.Second, os.Stdout)
+	transport, err := raft.NewTCPTransport(address.String(), nil, 3, 10*time.Second, logger)
 
 	if err != nil {
 		return nil, err

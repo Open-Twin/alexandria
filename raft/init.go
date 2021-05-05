@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Open-Twin/alexandria/cfg"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,9 +13,9 @@ import (
 	"time"
 )
 
-func Start(conf *cfg.Config, raftLogger *log.Logger) (*Node,error){
+func Start(conf *cfg.Config) (*Node,error){
 
-	raftNode, err := NewNode(conf, raftLogger)
+	raftNode, err := NewNode(conf)
 	if err != nil {
 		return nil, errors.New("Error configuring node: "+err.Error())
 	}
@@ -24,14 +24,14 @@ func Start(conf *cfg.Config, raftLogger *log.Logger) (*Node,error){
 	joinAddr := conf.JoinAddr
 	raftAddr := conf.RaftAddr
 	if conf.JoinAddr != nil {
-		raftLogger.Println("attempting join")
-		go join(joinAddr.String(), raftAddr.String(), raftLogger, 0)
+		log.Info().Msg("attempting join")
+		go join(joinAddr.String(), raftAddr.String(), 0)
 	}else if conf.Autojoin {
 		//else try to autojoin
-		raftLogger.Println("attempting auto-joining")
-		err := tryAutoJoin(raftAddr.String(), strconv.Itoa(conf.UdpPort), strconv.Itoa(conf.HttpAddr.Port), raftLogger)
+		log.Info().Msg("attempting auto-joining")
+		err := tryAutoJoin(raftAddr.String(), strconv.Itoa(conf.UdpPort), strconv.Itoa(conf.HttpAddr.Port))
 		if err != nil{
-			raftLogger.Print("autojoin failed: "+err.Error())
+			log.Error().Msg("autojoin failed: "+err.Error())
 		}
 	}
 	return raftNode, nil
@@ -41,7 +41,7 @@ func Start(conf *cfg.Config, raftLogger *log.Logger) (*Node,error){
  * tries to join node into cluster maxTries times.
  * if maxTries is 0, tries indefinitely.
  */
-func join(joinaddr, raftaddr string, raftLogger *log.Logger, maxTries int) error {
+func join(joinaddr, raftaddr string, maxTries int) error {
 	retryJoin := func() error {
 		joinUrl := url.URL{
 			Scheme: "http",
@@ -63,13 +63,13 @@ func join(joinaddr, raftaddr string, raftLogger *log.Logger, maxTries int) error
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("non 200 status code: %d", resp.StatusCode)
 		}
-		raftLogger.Print("join successful: "+joinaddr)
+		log.Info().Msg("join successful: "+joinaddr)
 		return nil
 	}
 	failedJoins := -1
 	for {
 		if err := retryJoin(); err != nil {
-			raftLogger.Print("error joining cluster: "+joinaddr)
+			log.Error().Msg("error joining cluster: "+joinaddr)
 			failedJoins++
 			if maxTries > 0 && failedJoins >= maxTries {
 				return errors.New("exceeded maximum join tries")
@@ -84,7 +84,7 @@ func join(joinaddr, raftaddr string, raftLogger *log.Logger, maxTries int) error
  * broadcasts a udp message to everyone in the network and listens
  * for a message from a fellow server. Tries to join said server after receiving message.
  */
-func tryAutoJoin(raftaddr, broadcastPort, httpPort string, raftLogger *log.Logger) error {
+func tryAutoJoin(raftaddr, broadcastPort, httpPort string) error {
 	//broadcast udp to find available servers
 	broadcastAddress := "255.255.255.255"
 	pc, err := net.ListenPacket("udp4", ":"+broadcastPort)
@@ -109,12 +109,12 @@ func tryAutoJoin(raftaddr, broadcastPort, httpPort string, raftLogger *log.Logge
 		if err != nil {
 			return err
 		}
-		raftLogger.Printf("autojoin received response from \"%s: %s\n", respaddr, buf[:n])
+		log.Info().Msgf("autojoin received response from \"%s: %s\n", respaddr, buf[:n])
 		//try joining address but with http port
-		err = join(strings.Split(respaddr.String(),":")[0]+":"+httpPort, raftaddr, raftLogger, 5)
+		err = join(strings.Split(respaddr.String(),":")[0]+":"+httpPort, raftaddr, 5)
 		if err != nil {
-			raftLogger.Print("failed autojoin request to "+respaddr.String()+":"+err.Error())
-			raftLogger.Print("waiting for other replies")
+			log.Info().Msgf("failed autojoin request to "+respaddr.String()+":"+err.Error())
+			log.Info().Msgf("waiting for other replies")
 		}else{
 			return nil
 		}

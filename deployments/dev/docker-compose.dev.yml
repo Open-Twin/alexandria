@@ -1,5 +1,4 @@
 version: "3"
-
 # Define services
 services:
   # App Service
@@ -8,10 +7,11 @@ services:
     volumes:
     - ../../:/go/src/go-with-compose
     working_dir: /go/src/go-with-compose
-    command: go run ./cmd/
+    command: go run ./cmd/main.go
     env_file: leader_config.env
     ports:
     - "8000:8000"
+    - "8080:8080"
     - "10000:10000/udp"
     - "20000:20000/udp"
     - "53:53/tcp"
@@ -24,12 +24,13 @@ services:
     volumes:
       - ../../:/go/src/go-with-compose
     working_dir: /go/src/go-with-compose
-    command: go run ./cmd/
+    command: go run ./cmd/main.go
     env_file: follower1_config.env
     depends_on: 
     - leader
     ports:
     - "8001:8000"
+    - "8081:8080"
     - "10001:10000/udp"
     - "20001:20000/udp"
     - "54:53/tcp"
@@ -42,12 +43,13 @@ services:
     volumes:
       - ../../:/go/src/go-with-compose
     working_dir: /go/src/go-with-compose
-    command: go run ./cmd/
+    command: go run ./cmd/main.go
     env_file: follower2_config.env
     depends_on: 
     - leader
     ports:
     - "8002:8000"
+    - "8082:8080"
     - "10002:10000/udp"
     - "20002:20000/udp"
     - "55:53/tcp"

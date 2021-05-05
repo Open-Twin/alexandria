@@ -2,14 +2,12 @@ package loadbalancing
 
 import (
 	"context"
-	"fmt"
-	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/storage"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 	"net/http"
-	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -36,20 +34,29 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	}
 	hc.ScheduleHealthChecks()
 
-	udpServer := communication.UDPServer{
-		Address: []byte{0, 0, 0, 0},
-		Port:    lb.DnsPort,
-	}
+	// https://gist.github.com/mike-zhang/3853251
 
-	// Listen for connections
-	go udpServer.Start(func(addr net.Addr, msg []byte) []byte {
-		// Run the method for every message received
-		ans := lb.forwardMsg(addr, msg)
-		return []byte(ans)
-	})
+	//	var idrop *float64 = flag.Float64("d", 0.0, "Packet drop rate")
+
+	dnsProxy := UdpProxy{
+		Lb:   lb,
+		Port: 53,
+	}
+	go dnsProxy.RunProxy()
+	dnsApi := UdpProxy{
+		Lb:   lb,
+		Port: 10000,
+	}
+	go dnsApi.RunProxy()
+	metaApi := UdpProxy{
+		Lb:   lb,
+		Port: 20000,
+	}
+	metaApi.RunProxy()
 }
 
 func (lb *AlexandriaBalancer) Close() {
+	log.Info().Msg("Shutting down Loadbalancer")
 	lb.httpServer.Shutdown(context.Background())
 	// TODO Close udpServer and stop HealthChecks
 }
@@ -59,35 +66,41 @@ func (lb *AlexandriaBalancer) startSignupEndpoint() {
 	http.HandleFunc("/signup", lb.addAlexandriaNode)
 	err := lb.httpServer.ListenAndServe()
 	if err != nil {
-		log.Fatalf("Signup Endpoint for Loadbalancer could not be started: %s", err.Error())
+		log.Fatal().Msgf("Signup Endpoint for Loadbalancer could not be started: %s", err.Error())
 	}
 }
 
 func (lb *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	ip := r.Form["ip"][0]
+	ip := r.RemoteAddr
+
+	// remove port from ip
+	ip = ip[0:strings.LastIndex(ip, ":")]
 
 	lb.lock.Lock()
 	lb.nodes[ip] = dns.NodeHealth{
-		Healthy:     false,
+		Healthy:     true,
 		Connections: 0,
 	}
 	lb.lock.Unlock()
 
+	log.Info().Msgf("Node %s added", ip)
 	w.Write([]byte("succesfully added"))
 }
 
 /**
 Returns the next address in the list of loadbalanced nodes
 */
-func (lb *AlexandriaBalancer) nextAddr() string {
+func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 	lb.lock.Lock()
 	defer lb.lock.Unlock()
 
 	i := 0
 	for ip, health := range lb.nodes {
 		if i == lb.pointer && health.Healthy == true {
-			return ip
+			return &net.UDPAddr{
+				Port: lb.DnsPort,
+				IP:   net.ParseIP(ip),
+			}
 		} else {
 			i += 1
 		}
@@ -99,45 +112,8 @@ func (lb *AlexandriaBalancer) nextAddr() string {
 
 	lb.pointer = i
 
-	return ""
-}
-
-/**
-Forwards an incoming message to a dns node
-*/
-func (lb *AlexandriaBalancer) forwardMsg(source net.Addr, msg []byte) string {
-	fmt.Println("Message received: " + string(msg))
-
-	if len(lb.nodes) == 0 {
-		log.Println("No dns nodes to forward to.")
-		return "no nodes available"
+	return &net.UDPAddr{
+		Port: lb.DnsPort,
+		IP:   net.ParseIP("127.0.0.1"),
 	}
-
-	adrentik := lb.nextAddr()
-	if adrentik == "" {
-		log.Println("No healthy nodes available.")
-	}
-
-	receiverAddr, err := net.ResolveUDPAddr("udp", adrentik+":"+strconv.Itoa(lb.DnsPort))
-	if err != nil {
-		log.Printf("Error on resolving dns address : %s\n", err)
-	}
-
-	sourceAddr, err := net.ResolveUDPAddr("udp", source.String())
-	if err != nil {
-		log.Printf("Error on resolving client address : %s\n", err)
-	}
-
-	target, err := net.DialUDP("udp", sourceAddr, receiverAddr)
-	if err != nil {
-		log.Printf("Error on establishing dns connection: %s\n", err)
-	}
-
-	_, err = target.WriteToUDP(msg, receiverAddr)
-	if err != nil {
-		log.Printf("Error on sending message to dns: %s\n", err)
-	}
-
-	log.Printf("Message forwareded to: %s:%d\n", adrentik, lb.DnsPort)
-	return "yeah"
 }
