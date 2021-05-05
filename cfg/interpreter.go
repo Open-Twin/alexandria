@@ -10,10 +10,14 @@ import (
 	"strconv"
 )
 
+/**
+HOSTNAME=peter;LOG_LEVEL=1;DATA_DIR=/alexandria-data;LB_IP=192.168.0.1:8080;BOOTSTRAP=trueAUTOJOIN=true;HEALTHCHECK_INTERVAL=400;HTTP_ADDR=127.0.0.1;RAFT_ADDR=127.0.0.1;JOIN_ADDRESS=1.2.3.4;HTTP_PORT=8000;RAFT_PORT=7000
+*/
 type rawConfig struct {
 	Hostname            string `validate:"required,hostname"`
 	LogLevel            int    `validate:"required,max=5,min=1"`
 	DataDir             string `validate:"required,dir"`
+	LbIP                string `validate:"required"`
 	Bootstrap           bool
 	Autojoin            bool
 	HealthcheckInterval int    `validate:"required,min=1000"`
@@ -35,6 +39,7 @@ type Config struct {
 	Hostname            string
 	LogLevel            int
 	DataDir             string
+	LbIP                string
 	Bootstrap           bool
 	Autojoin            bool
 	HealthcheckInterval int
@@ -55,6 +60,7 @@ func ReadConf() Config {
 		HOSTNAME             = "HOSTNAME"
 		LOG_LEVEL            = "LOG_LEVEL"
 		DATA_DIR             = "DATA_DIR"
+		LBIP                 = "LB_IP"
 		BOOTSTRAP            = "BOOTSTRAP"
 		AUTO_JOIN            = "AUTOJOIN"
 		HEALTHCHECK_INTERVAL = "HEALTHCHECK_INTERVAL"
@@ -83,6 +89,8 @@ func ReadConf() Config {
 	cfg.LogLevel = logLevel
 
 	cfg.DataDir = os.Getenv(DATA_DIR)
+
+	cfg.LbIP = os.Getenv(LBIP)
 
 	bootStrap, errBoot := strconv.ParseBool(os.Getenv(BOOTSTRAP))
 	if errBoot != nil {
@@ -218,11 +226,13 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 			Port: rawConfig.HttpPort,
 		}
 	}
+
 	//create config
 	config := Config{
 		Hostname:            rawConfig.Hostname,
 		LogLevel:            rawConfig.LogLevel,
 		DataDir:             rawConfig.DataDir,
+		LbIP:                rawConfig.LbIP,
 		Bootstrap:           rawConfig.Bootstrap,
 		Autojoin:            rawConfig.Autojoin,
 		HealthcheckInterval: rawConfig.HealthcheckInterval,
@@ -243,6 +253,7 @@ const (
 	Hostname            = "ariel"
 	LogLevel            = 1
 	DataDir             = "alexandria-data"
+	LbIP                = "0.0.0.0:8080"
 	Bootstrap           = false
 	AutoJoin            = true
 	HealthcheckInterval = 3000
@@ -281,6 +292,9 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 			//TODO: fatal
 			log.Fatal().Msgf("Default directory %s could not created: %s\n", conf.DataDir, err.Error())
 		}
+	case "LbIP":
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "LbIP", LbIP)
+		conf.LbIP = LbIP
 	case "Autojoin":
 		log.Warn().Msgf("Using default value for %s istead: %v\n", "Autojoin", AutoJoin)
 		conf.Autojoin = AutoJoin

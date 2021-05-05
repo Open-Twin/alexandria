@@ -2,14 +2,37 @@ package loadbalancing
 
 import (
 	"github.com/rs/zerolog/log"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
 
-func StartLoadReporting() {
+func StartLoadReporting(lbUrl string) {
+	lbRegister(lbUrl)
+
 	http.HandleFunc("/health", sendLoad)
 	go http.ListenAndServe(":8080", nil)
 	log.Info().Msg("Started reporting alexandria server load")
+}
+
+func lbRegister(lbUrl string) {
+	resp, err := http.Get("http://" + lbUrl + "/signup")
+	if err != nil {
+		log.Error().Msgf("Registration at loadbalancer failed: %v", err)
+	} else {
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Error().Msgf("Error reading loadbalancer answer: %v", err)
+		}
+
+		if string(body) != "succesfully added" {
+			log.Error().Msgf("Adding node didn't work: %v", string(body))
+		}
+
+		log.Info().Msgf("Registered at loadbalancer")
+	}
 }
 
 func sendLoad(w http.ResponseWriter, r *http.Request) {
