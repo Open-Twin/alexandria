@@ -3,7 +3,7 @@ package dns
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
+	"github.com/rs/zerolog/log"
 	"reflect"
 )
 
@@ -130,8 +130,7 @@ func (pdu DNSPDU) Bytes() ([]byte, error) {
 			return nil, err
 		}
 	}
-	log.Println("ANSWERS")
-	log.Println(pdu.AnswerResourceRecords)
+	log.Debug().Msgf("Generated Answers: %v", pdu.AnswerResourceRecords)
 	err = writeResourceRecords(responseBuffer, pdu.AnswerResourceRecords)
 	if err != nil {
 		return nil, err

@@ -3,12 +3,19 @@ version: "3"
 # Define services
 services:
   # App Service
-  app:
+  node:
     image: golang:latest
     volumes:
       - ../:/go/src/go-with-compose
     working_dir: /go/src/go-with-compose
-    command: go run ./cmd/
-    env_file: ../cfg/config.env
+    command: go run ./cmd/main.go
+    env_file:
+     - .env
     ports:
-    - "8000:8000"
+     - "${RAFT_PORT}:${RAFT_PORT}"
+     - "${HTTP_PORT}:${HTTP_PORT}"
+     - "${DNS_API_PORT}:${DNS_API_PORT}/udp"
+     - "${META_API_PORT}:${META_API_PORT}/udp"
+     - "${UDP_PORT}:${UDP_PORT}/udp"
+     - "${DNS_PORT}:${DNS_PORT}/udp"
+     - "${DNS_PORT}:${DNS_PORT}/tcp"

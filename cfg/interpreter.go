@@ -2,7 +2,7 @@ package cfg
 
 import (
 	"github.com/go-playground/validator/v10"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 	"os"
 	"path/filepath"
@@ -10,16 +10,20 @@ import (
 	"strconv"
 )
 
+/**
+HOSTNAME=peter;LOG_LEVEL=1;DATA_DIR=/alexandria-data;LB_IP=192.168.0.1:8080;BOOTSTRAP=trueAUTOJOIN=true;HEALTHCHECK_INTERVAL=400;HTTP_ADDR=127.0.0.1;RAFT_ADDR=127.0.0.1;JOIN_ADDRESS=1.2.3.4;HTTP_PORT=8000;RAFT_PORT=7000
+*/
 type rawConfig struct {
 	Hostname            string `validate:"required,hostname"`
 	LogLevel            int    `validate:"required,max=5,min=1"`
 	DataDir             string `validate:"required,dir"`
+	LbIP                string `validate:"required"`
 	Bootstrap           bool
 	Autojoin            bool
 	HealthcheckInterval int    `validate:"required,min=1000"`
 	HttpAddr            string `validate:"required,ipv4"`
 	RaftAddr            string `validate:"required,ipv4"`
-	JoinAddr            string `validate:"required,ipv4"`
+	JoinAddr            string `validate:"omitempty,ipv4"`
 	MetaApiAddr         string `validate:"required,ipv4"`
 	DnsApiAddr          string `validate:"required,ipv4"`
 	DnsAddr             string `validate:"required,ipv4"`
@@ -35,6 +39,7 @@ type Config struct {
 	Hostname            string
 	LogLevel            int
 	DataDir             string
+	LbIP                string
 	Bootstrap           bool
 	Autojoin            bool
 	HealthcheckInterval int
@@ -55,8 +60,9 @@ func ReadConf() Config {
 		HOSTNAME             = "HOSTNAME"
 		LOG_LEVEL            = "LOG_LEVEL"
 		DATA_DIR             = "DATA_DIR"
+		LBIP                 = "LB_IP"
 		BOOTSTRAP            = "BOOTSTRAP"
-		AUTO_JOIN            = "AUTO_JOIN"
+		AUTO_JOIN            = "AUTOJOIN"
 		HEALTHCHECK_INTERVAL = "HEALTHCHECK_INTERVAL"
 		HTTP_ADDR            = "HTTP_ADDR"
 		RAFT_ADDR            = "RAFT_ADDR"
@@ -84,9 +90,11 @@ func ReadConf() Config {
 
 	cfg.DataDir = os.Getenv(DATA_DIR)
 
+	cfg.LbIP = os.Getenv(LBIP)
+
 	bootStrap, errBoot := strconv.ParseBool(os.Getenv(BOOTSTRAP))
 	if errBoot != nil {
-		log.Printf("Using default value for %s istead: %v\n", "Bootstrap", Bootstrap)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "Bootstrap", Bootstrap)
 		bootStrap = false
 	}
 	cfg.Bootstrap = bootStrap
@@ -153,7 +161,7 @@ func ReadConf() Config {
 
 	validatedCfg, errs := validateConfig(cfg)
 	for err := range errs {
-		log.Printf("Error in Config: %v", err)
+		log.Error().Msgf("Error in Config: %v", err)
 	}
 
 	return validatedCfg
@@ -218,11 +226,13 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 			Port: rawConfig.HttpPort,
 		}
 	}
+
 	//create config
 	config := Config{
 		Hostname:            rawConfig.Hostname,
 		LogLevel:            rawConfig.LogLevel,
 		DataDir:             rawConfig.DataDir,
+		LbIP:                rawConfig.LbIP,
 		Bootstrap:           rawConfig.Bootstrap,
 		Autojoin:            rawConfig.Autojoin,
 		HealthcheckInterval: rawConfig.HealthcheckInterval,
@@ -243,6 +253,7 @@ const (
 	Hostname            = "ariel"
 	LogLevel            = 1
 	DataDir             = "alexandria-data"
+	LbIP                = "0.0.0.0:8080"
 	Bootstrap           = false
 	AutoJoin            = true
 	HealthcheckInterval = 3000
@@ -261,73 +272,77 @@ const (
 )
 
 func setDefaultValue(error validator.FieldError, conf *rawConfig) {
-	log.Printf("Setting field %s threw error: %s\n", error.Field(), error.Error())
+	log.Error().Msgf("Setting field %s threw error: %s\n", error.Field(), error.Error())
 
 	switch error.Field() {
 	case "Hostname":
-		log.Printf("Using default value for %s istead: %s\n", "Hostname", Hostname)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "Hostname", Hostname)
 		conf.Hostname = Hostname
 	case "Loglevel":
-		log.Printf("Using default value for %s istead: %d\n", "Loglevel", LogLevel)
+		log.Warn().Msgf("Using default value for %s istead: %d\n", "Loglevel", LogLevel)
 		conf.LogLevel = LogLevel
 	case "DataDir":
 		_, b, _, _ := runtime.Caller(0)
 		path := filepath.Dir(b)
 		dataDir := path + "/../" + DataDir
-		log.Printf("Using default value for %s istead: %s\n", "DataDir", dataDir)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "DataDir", dataDir)
 		conf.DataDir = dataDir
 		err := createDirectory(conf.DataDir)
 		if err != nil {
-			log.Fatalf("Default directory %s could not created: %s\n", conf.DataDir, err.Error())
+			//TODO: fatal
+			log.Fatal().Msgf("Default directory %s could not created: %s\n", conf.DataDir, err.Error())
 		}
+	case "LbIP":
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "LbIP", LbIP)
+		conf.LbIP = LbIP
 	case "Autojoin":
-		log.Printf("Using default value for %s istead: %v\n", "Autojoin", AutoJoin)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "Autojoin", AutoJoin)
 		conf.Autojoin = AutoJoin
 	case "HealthcheckInterval":
-		log.Printf("Using default value for %s istead: %d\n", "HealthcheckInterval", HealthcheckInterval)
+		log.Warn().Msgf("Using default value for %s istead: %d\n", "HealthcheckInterval", HealthcheckInterval)
 		conf.HealthcheckInterval = HealthcheckInterval
 	case "HttpAddr":
-		log.Printf("Using default value for %s istead: %s\n", "HttpAddr", HttpAddr)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "HttpAddr", HttpAddr)
 		conf.HttpAddr = HttpAddr
 	case "RaftAddr":
-		log.Printf("Using default value for %s istead: %s\n", "RaftAddr", RaftAddr)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "RaftAddr", RaftAddr)
 		conf.RaftAddr = RaftAddr
 	case "MetaApiAddr":
-		log.Printf("Using default value for %s istead: %s\n", "MetaApiAddr", MetaApiAddr)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "MetaApiAddr", MetaApiAddr)
 		conf.MetaApiAddr = MetaApiAddr
 	case "DnsApiAddr":
-		log.Printf("Using default value for %s istead: %s\n", "DnsApiAddr", DnsApiAddr)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "DnsApiAddr", DnsApiAddr)
 		conf.DnsApiAddr = DnsApiAddr
 	case "DnsAddr":
-		log.Printf("Using default value for %s istead: %s\n", "DnsApiAddr", DnsAddr)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "DnsAddr", DnsAddr)
 		conf.DnsAddr = DnsAddr
 	case "JoinAddr":
-		log.Printf("Using default value for %s istead: %s\n", "JoinAddr", JoinAddr)
+		log.Warn().Msgf("Using default value for %s istead: %s\n", "JoinAddr", JoinAddr)
 		conf.JoinAddr = JoinAddr
 	case "HttpPort":
-		log.Printf("Using default value for %s istead: %v\n", "HttpPort", HttpPort)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "HttpPort", HttpPort)
 		conf.HttpPort = HttpPort
 	case "RaftPort":
-		log.Printf("Using default value for %s istead: %v\n", "RaftPort", RaftPort)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "RaftPort", RaftPort)
 		conf.RaftPort = RaftPort
 	case "MetaApiPort":
-		log.Printf("Using default value for %s istead: %v\n", "MetaApiPort", MetaApiPort)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "MetaApiPort", MetaApiPort)
 		conf.MetaApiPort = MetaApiPort
 	case "DnsApiPort":
-		log.Printf("Using default value for %s istead: %v\n", "DnsApiPort", DnsApiPort)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "DnsApiPort", DnsApiPort)
 		conf.DnsApiPort = DnsApiPort
 	case "DnsPort":
-		log.Printf("Using default value for %s istead: %v\n", "DnsApiPort", DnsPort)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "DnsPort", DnsPort)
 		conf.DnsPort = DnsPort
 	case "UdpPort":
-		log.Printf("Using default value for %s istead: %v\n", "UdpPort", UdpPort)
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "UdpPort", UdpPort)
 		conf.UdpPort = UdpPort
 	}
 }
 
 func createDirectory(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		log.Printf("Directory %s not found. Creating new directory...\n", dir)
+		log.Warn().Msgf("Directory %s not found. Creating new directory...\n", dir)
 		err := os.Mkdir(dir, 0755)
 		if err != nil {
 			return err

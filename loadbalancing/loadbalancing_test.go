@@ -1,12 +1,12 @@
-package loadbalancing
+package loadbalancing_test
 
 import (
 	"github.com/Open-Twin/alexandria/dns"
+	"github.com/Open-Twin/alexandria/loadbalancing"
 	"github.com/Open-Twin/alexandria/storage"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"testing"
@@ -14,12 +14,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	loadbalancer := AlexandriaBalancer{
-		DnsPort:             8333,
-		HealthCheckInterval: 2000,
-	}
-	loadbalancer.StartAlexandriaLoadbalancer()
-
 	code := m.Run()
 	os.Exit(code)
 }
@@ -32,15 +26,15 @@ func TestHealthchecksSendPing(t *testing.T) {
 		Connections: 0,
 	}}
 
-	hc := HealthCheck{
-		Nodes:     &nodes,
+	hc := loadbalancing.HealthCheck{
+		Nodes:     nodes,
 		Interval:  10,
-		CheckType: PingCheck,
+		CheckType: loadbalancing.PingCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(500 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == false {
 		t.Errorf("Sending ping healthcheck did not work: %v", nodes)
 	}
@@ -52,37 +46,37 @@ func TestHealthchecksSendPingNodeOffline(t *testing.T) {
 		Connections: 0,
 	}}
 
-	hc := HealthCheck{
-		Nodes:     &nodes,
+	hc := loadbalancing.HealthCheck{
+		Nodes:     nodes,
 		Interval:  10,
-		CheckType: PingCheck,
+		CheckType: loadbalancing.PingCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(30 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["12.12.12.12"].Healthy == true {
 		t.Errorf("Ping healthcheck falesly reported node as online: %v", nodes)
 	}
 }
 
 func TestHealthchecksSendHttp(t *testing.T) {
-	StartLoadReporting()
+	loadbalancing.StartLoadReporting("127.0.0.1:8080")
 
 	nodes := map[storage.Ip]dns.NodeHealth{"127.0.0.1": {
 		Healthy:     false,
 		Connections: 0,
 	}}
 
-	hc := HealthCheck{
-		Nodes:     &nodes,
+	hc := loadbalancing.HealthCheck{
+		Nodes:     nodes,
 		Interval:  10,
-		CheckType: HttpCheck,
+		CheckType: loadbalancing.HttpCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(30 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == false {
 		t.Errorf("Sending http healthcheck did not work: %v", nodes)
 	}
@@ -94,15 +88,15 @@ func TestHealthchecksSendHttpNodeOffline(t *testing.T) {
 		Connections: 0,
 	}}
 
-	hc := HealthCheck{
-		Nodes:     &nodes,
+	hc := loadbalancing.HealthCheck{
+		Nodes:     nodes,
 		Interval:  10,
-		CheckType: HttpCheck,
+		CheckType: loadbalancing.HttpCheck,
 	}
 	hc.ScheduleHealthChecks()
 
 	time.Sleep(50 * time.Millisecond)
-	nodes = *hc.Nodes
+	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == true {
 		t.Errorf("Http healthcheck falesly reported node as online: %v", nodes)
 	}
@@ -112,11 +106,19 @@ func TestHealthchecksSendHttpNodeOffline(t *testing.T) {
 var dnsAnswer = "My name is dns."
 
 func TestLoadbalancerSignupEndpoint(t *testing.T) {
-	lbUrl := "http://127.0.0.1:8080/"
+	/*
+		loadbalancer := loadbalancing.AlexandriaBalancer{
+			DnsPort:             53,
+			HealthCheckInterval: 30 * 1000,
+		}
+		loadbalancer.StartAlexandriaLoadbalancer()
 
-	signinLocalhost(t, lbUrl)
+		lbUrl := "http://127.0.0.1:8080/"
 
-	time.Sleep(1000)
+		signinLocalhost(t, lbUrl)
+
+		time.Sleep(1000)
+	*/
 }
 
 func TestLoadbalancerRequest(t *testing.T) {
@@ -148,16 +150,13 @@ func TestLoadbalancerNoServerAdded(t *testing.T) {
 	}*/
 }
 
+/*
 func TestServerNoResponse(t *testing.T) {
 
-}
+}*/
 
 func signinLocalhost(t *testing.T, lbUrl string) {
-	data := url.Values{
-		"ip": {"127.0.0.1"},
-	}
-
-	resp, err := http.PostForm(lbUrl+"signup", data)
+	resp, err := http.Get(lbUrl + "signup")
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
