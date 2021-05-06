@@ -213,7 +213,7 @@ func TestDnsNodeDistribution(t *testing.T) {
 	}
 }
 
-func sendDig(hostname string, dnsip string) ([]net.IP, error) {
+func sendDig(hostname string, dnsip string) ([]net.IPAddr, error) {
 	r := &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -223,5 +223,5 @@ func sendDig(hostname string, dnsip string) ([]net.IP, error) {
 			return d.DialContext(ctx, network, dnsip)
 		},
 	}
-	return r.LookupIP(context.Background(), "ip", hostname)
+	return r.LookupIPAddr(context.Background(), hostname)
 }
