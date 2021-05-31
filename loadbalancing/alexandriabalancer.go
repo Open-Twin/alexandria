@@ -95,18 +95,32 @@ func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 	defer lb.lock.Unlock()
 
 	i := 0
+	unhealthy := false
 	for ip, health := range lb.nodes {
-		if i == lb.pointer && health.Healthy == true {
-			return &net.UDPAddr{
-				Port: lb.DnsPort,
-				IP:   net.ParseIP(ip),
+		if i == lb.pointer {
+			if health.Healthy == true {
+				return &net.UDPAddr{
+					Port: lb.DnsPort,
+					IP:   net.ParseIP(ip),
+				}
+			} else {
+				unhealthy = true
 			}
-		} else {
-			i += 1
 		}
+		if unhealthy {
+			if health.Healthy == true {
+				return &net.UDPAddr{
+					Port: lb.DnsPort,
+					IP:   net.ParseIP(ip),
+				}
+			}
+			if i == lb.pointer {
+				break
+			}
+		}
+		i += 1
 		if i > len(lb.nodes) {
 			i = 0
-			break
 		}
 	}
 
