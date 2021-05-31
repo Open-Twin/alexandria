@@ -40,6 +40,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 
 	dnsProxy := UdpProxy{
 		Lb:   lb,
+		//TODO: no hardcoding
 		Port: 53,
 	}
 	go dnsProxy.RunProxy()
@@ -90,7 +91,7 @@ func (lb *AlexandriaBalancer) addAlexandriaNode(w http.ResponseWriter, r *http.R
 /**
 Returns the next address in the list of loadbalanced nodes
 */
-func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
+func (lb *AlexandriaBalancer) nextAddr(port int) *net.UDPAddr {
 	lb.lock.Lock()
 	defer lb.lock.Unlock()
 
@@ -100,7 +101,7 @@ func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 		if i == lb.pointer {
 			if health.Healthy == true {
 				return &net.UDPAddr{
-					Port: lb.DnsPort,
+					Port: port,
 					IP:   net.ParseIP(ip),
 				}
 			} else {
@@ -110,7 +111,7 @@ func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 		if unhealthy {
 			if health.Healthy == true {
 				return &net.UDPAddr{
-					Port: lb.DnsPort,
+					Port: port,
 					IP:   net.ParseIP(ip),
 				}
 			}
@@ -127,7 +128,7 @@ func (lb *AlexandriaBalancer) nextAddr() *net.UDPAddr {
 	lb.pointer = i
 
 	return &net.UDPAddr{
-		Port: lb.DnsPort,
+		Port: port,
 		IP:   net.ParseIP("127.0.0.1"),
 	}
 }
