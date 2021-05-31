@@ -2,6 +2,23 @@ version: "3"
 # Define services
 services:
   # App Service
+  loadbalancer:
+    image: golang:latest
+    volumes:
+    - ../../:/go/src/go-with-compose
+    working_dir: /go/src/go-with-compose
+    command: go run ./cmd/launchlb.go
+    env_file: lb_config.env
+    ports:
+    - "8003:8000"
+    - "8083:8080"
+    - "10003:10000/udp"
+    - "20003:20000/udp"
+    - "56:53/tcp"
+    - "56:53/udp"
+    networks:
+      front:
+        ipv4_address: 10.5.0.5
   leader:
     image: golang:latest
     volumes:

@@ -16,7 +16,7 @@ func StartLoadReporting(lbUrl string) {
 }
 
 func lbRegister(lbUrl string) {
-	resp, err := http.Get("http://" + lbUrl + "/signup")
+	resp, err := http.Get("http://" + lbUrl + ":8080/signup")
 	if err != nil {
 		log.Error().Msgf("Registration at loadbalancer failed: %v", err)
 	} else {
