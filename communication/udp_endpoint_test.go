@@ -31,7 +31,6 @@ func TestMain(m *testing.M){
 }
 
 func TestUDPIsReachableShouldPass(t *testing.T) {
-	log.Print("cock: "+ip.String())
 	conn, err := net.Dial("udp", ip.String()+":"+strconv.Itoa(port))
 	//defer conn.Close()
 	if err != nil {

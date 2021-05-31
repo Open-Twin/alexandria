@@ -39,7 +39,7 @@ func handle(addr net.Addr, buf []byte, api *DnsEntrypoint) []byte{
 	hostnames := dns.ExtractQuestionHostnames(&pdu)
 
 	requestedRecords := queryDnsRepo(hostnames, api)
-	log.Debug().Msgf("requested records: %s", requestedRecords)
+	log.Debug().Msgf("requested records: %v", requestedRecords)
 	answer := dns.CreateAnswer(pdu, requestedRecords, buf)
 
 	log.Debug().Msgf("Answer Header: %v\n", answer.Header)
