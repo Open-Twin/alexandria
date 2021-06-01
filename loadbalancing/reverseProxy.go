@@ -62,7 +62,6 @@ func (up *UdpProxy) RunProxy() {
 			up.dunlock()
 		}
 		// Relay to server
-		log.Info().Msg("NIGNOG")
 		_, err = conn.ServerConn.Write(buffer[0:n])
 		if checkreport(1, err) {
 			continue
@@ -117,7 +116,7 @@ func (up *UdpProxy) runConnection(conn *Connection) {
 		if checkreport(1, err) {
 			continue
 		}
-		log.Info().Msg("NIGNOG2")
+
 		// Relay it to client
 		_, err = up.proxyConn.WriteToUDP(buffer[0:n], conn.ClientAddr)
 		if checkreport(1, err) {

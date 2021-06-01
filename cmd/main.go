@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
 
 	//dns api
 	api := &storageApi.API{
-		Node: raftNode,
+		Node:        raftNode,
 		MetaAddress: conf.MetaApiAddr,
 		DNSAddress:  conf.DnsApiAddr,
 		NetworkType: "udp",
@@ -48,9 +49,11 @@ func main() {
 	api.Start()
 
 	healthchecks := loadbalancing.HealthCheck{
-		Nodes:     raftNode.Fsm.DnsRepo.LbInfo,
-		Interval:  30 * 1000,
-		CheckType: loadbalancing.PingCheck,
+		Nodes:          raftNode.Fsm.DnsRepo.LbInfo,
+		Interval:       30 * time.Second,
+		CheckType:      loadbalancing.PingCheck,
+		RemoveTimeout:  1 * time.Hour,
+		RequestTimeout: 1 * time.Second,
 	}
 	log.Info().Msg("Starting healthchecks")
 	healthchecks.ScheduleHealthChecks()
