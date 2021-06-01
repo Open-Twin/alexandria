@@ -14,7 +14,11 @@ import (
 
 type AlexandriaBalancer struct {
 	DnsPort             int
+	DnsApiPort          int
+	MetdataApiPort      int
 	HealthCheckInterval time.Duration
+	RemoveNodeTimeout   time.Duration
+	RequestTimeout      time.Duration
 	nodes               map[storage.Ip]dns.NodeHealth
 	pointer             int
 	lock                sync.RWMutex
@@ -30,10 +34,10 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 
 	hc := HealthCheck{
 		Nodes:          lb.nodes,
-		Interval:       lb.HealthCheckInterval,
+		Interval:       lb.HealthCheckInterval * time.Millisecond,
 		CheckType:      HttpCheck,
-		RemoveTimeout:  1 * time.Hour,
-		RequestTimeout: 1 * time.Second,
+		RemoveTimeout:  lb.RemoveNodeTimeout * time.Second,
+		RequestTimeout: lb.RequestTimeout * time.Millisecond,
 	}
 	hc.ScheduleHealthChecks()
 
@@ -42,19 +46,18 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	//	var idrop *float64 = flag.Float64("d", 0.0, "Packet drop rate")
 
 	dnsProxy := UdpProxy{
-		Lb: lb,
-		//TODO: no hardcoding
-		Port: 53,
+		Lb:   lb,
+		Port: lb.DnsPort,
 	}
 	go dnsProxy.RunProxy()
 	dnsApi := UdpProxy{
 		Lb:   lb,
-		Port: 10000,
+		Port: lb.DnsApiPort,
 	}
 	go dnsApi.RunProxy()
 	metaApi := UdpProxy{
 		Lb:   lb,
-		Port: 20000,
+		Port: lb.MetdataApiPort,
 	}
 	metaApi.RunProxy()
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/loadbalancing"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -9,13 +10,20 @@ import (
 )
 
 func main() {
-	//init logger
+	// init logger
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
+	// read configuration
+	conf := cfg.ReadConf()
+	logLevel := conf.LogLevel
+	zerolog.SetGlobalLevel(zerolog.Level(logLevel))
+
 	loadbalancer := loadbalancing.AlexandriaBalancer{
-		DnsPort:             53,
-		HealthCheckInterval: 30 * time.Second,
+		DnsPort:             cfg.DnsPort,
+		DnsApiPort:          cfg.DnsApiPort,
+		MetdataApiPort:      cfg.MetaApiPort,
+		HealthCheckInterval: cfg.HealthcheckInterval * time.Millisecond,
 	}
 	loadbalancer.StartAlexandriaLoadbalancer()
 }

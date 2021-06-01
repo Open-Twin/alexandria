@@ -13,11 +13,11 @@ import (
 )
 
 func main() {
-	//init logger
+	// init logger
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	//read config
+	// read config
 	conf := cfg.ReadConf()
 	logLevel := conf.LogLevel
 	zerolog.SetGlobalLevel(zerolog.Level(logLevel))
@@ -30,7 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	//dns entrypoint
+	// dns entrypoint
 	dnsEntrypoint := &communication.DnsEntrypoint{
 		Node:    raftNode,
 		Address: conf.DnsAddr,
@@ -38,7 +38,7 @@ func main() {
 	log.Info().Msg("Starting DNS entrypoint")
 	dnsEntrypoint.Start()
 
-	//dns api
+	// dns api
 	api := &storageApi.API{
 		Node:        raftNode,
 		MetaAddress: conf.MetaApiAddr,
@@ -48,12 +48,13 @@ func main() {
 	log.Info().Msg("Starting storage API")
 	api.Start()
 
+	// healthchecks
 	healthchecks := loadbalancing.HealthCheck{
 		Nodes:          raftNode.Fsm.DnsRepo.LbInfo,
-		Interval:       30 * time.Second,
+		Interval:       cfg.HealthcheckInterval * time.Millisecond,
 		CheckType:      loadbalancing.PingCheck,
-		RemoveTimeout:  1 * time.Hour,
-		RequestTimeout: 1 * time.Second,
+		RemoveTimeout:  cfg.RemoveNodeTimeout * time.Second,
+		RequestTimeout: cfg.HealthcheckRequestTimeout * time.Millisecond,
 	}
 	log.Info().Msg("Starting healthchecks")
 	healthchecks.ScheduleHealthChecks()

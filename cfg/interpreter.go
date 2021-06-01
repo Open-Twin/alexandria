@@ -14,42 +14,46 @@ import (
 HOSTNAME=peter;LOG_LEVEL=1;DATA_DIR=/alexandria-data;LB_IP=192.168.0.1:8080;BOOTSTRAP=trueAUTOJOIN=true;HEALTHCHECK_INTERVAL=400;HTTP_ADDR=127.0.0.1;RAFT_ADDR=127.0.0.1;JOIN_ADDRESS=1.2.3.4;HTTP_PORT=8000;RAFT_PORT=7000
 */
 type rawConfig struct {
-	Hostname            string `validate:"required,hostname"`
-	LogLevel            int    `validate:"required,max=5,min=1"`
-	DataDir             string `validate:"required,dir"`
-	LbIP                string `validate:"required"`
-	Bootstrap           bool
-	Autojoin            bool
-	HealthcheckInterval int    `validate:"required,min=1000"`
-	HttpAddr            string `validate:"required,ipv4"`
-	RaftAddr            string `validate:"required,ipv4"`
-	JoinAddr            string `validate:"omitempty,ipv4"`
-	MetaApiAddr         string `validate:"required,ipv4"`
-	DnsApiAddr          string `validate:"required,ipv4"`
-	DnsAddr             string `validate:"required,ipv4"`
-	HttpPort            int    `validate:"required,max=65536,min=1" default:"5"`
-	RaftPort            int    `validate:"required,max=65536,min=1"`
-	MetaApiPort         int    `validate:"required,max=65536,min=1"`
-	DnsApiPort          int    `validate:"required,max=65536,min=1"`
-	UdpPort             int    `validate:"required,max=65536,min=1"`
-	DnsPort             int    `validate:"required,max=65536,min=1"`
+	Hostname                 string `validate:"required,hostname"`
+	LogLevel                 int    `validate:"required,max=5,min=1"`
+	DataDir                  string `validate:"required,dir"`
+	LbIP                     string `validate:"required"`
+	Bootstrap                bool
+	Autojoin                 bool
+	HealthcheckInterval      int    `validate:"required,min=1000"`
+	RemoveNodeTimeout        int    `validate:"min=10"`
+	HealthceckRequestTimeout int    `validate:"min=1000"`
+	HttpAddr                 string `validate:"required,ipv4"`
+	RaftAddr                 string `validate:"required,ipv4"`
+	JoinAddr                 string `validate:"omitempty,ipv4"`
+	MetaApiAddr              string `validate:"required,ipv4"`
+	DnsApiAddr               string `validate:"required,ipv4"`
+	DnsAddr                  string `validate:"required,ipv4"`
+	HttpPort                 int    `validate:"required,max=65536,min=1" default:"5"`
+	RaftPort                 int    `validate:"required,max=65536,min=1"`
+	MetaApiPort              int    `validate:"required,max=65536,min=1"`
+	DnsApiPort               int    `validate:"required,max=65536,min=1"`
+	UdpPort                  int    `validate:"required,max=65536,min=1"`
+	DnsPort                  int    `validate:"required,max=65536,min=1"`
 }
 
 type Config struct {
-	Hostname            string
-	LogLevel            int
-	DataDir             string
-	LbIP                string
-	Bootstrap           bool
-	Autojoin            bool
-	HealthcheckInterval int
-	HttpAddr            net.TCPAddr
-	RaftAddr            net.TCPAddr
-	JoinAddr            net.Addr
-	MetaApiAddr         net.TCPAddr
-	DnsApiAddr          net.TCPAddr
-	DnsAddr             net.TCPAddr
-	UdpPort             int
+	Hostname                 string
+	LogLevel                 int
+	DataDir                  string
+	LbIP                     string
+	Bootstrap                bool
+	Autojoin                 bool
+	HealthcheckInterval      int
+	RemoveNodeTimeout        int
+	HealtcheckRequestTimeout int
+	HttpAddr                 net.TCPAddr
+	RaftAddr                 net.TCPAddr
+	JoinAddr                 net.Addr
+	MetaApiAddr              net.TCPAddr
+	DnsApiAddr               net.TCPAddr
+	DnsAddr                  net.TCPAddr
+	UdpPort                  int
 }
 
 // Reads the configuration from the environment variables.
@@ -57,25 +61,27 @@ type Config struct {
 func ReadConf() Config {
 	// This constant saves the names of the environment variables
 	const (
-		HOSTNAME             = "HOSTNAME"
-		LOG_LEVEL            = "LOG_LEVEL"
-		DATA_DIR             = "DATA_DIR"
-		LBIP                 = "LB_IP"
-		BOOTSTRAP            = "BOOTSTRAP"
-		AUTO_JOIN            = "AUTOJOIN"
-		HEALTHCHECK_INTERVAL = "HEALTHCHECK_INTERVAL"
-		HTTP_ADDR            = "HTTP_ADDR"
-		RAFT_ADDR            = "RAFT_ADDR"
-		JOIN_ADDR            = "JOIN_ADDR"
-		META_ADDR            = "META_API_ADDR"
-		DNS_API_ADDR         = "DNS_API_ADDR"
-		DNS_ADDR             = "DNS_ADDR"
-		HTTP_PORT            = "HTTP_PORT"
-		RAFT_PORT            = "RAFT_PORT"
-		DNS_API_PORT         = "DNS_API_PORT"
-		META_API_PORT        = "META_API_PORT"
-		UDP_PORT             = "UDP_PORT"
-		DNS_PORT             = "DNS_PORT"
+		HOSTNAME                    = "HOSTNAME"
+		LOG_LEVEL                   = "LOG_LEVEL"
+		DATA_DIR                    = "DATA_DIR"
+		LBIP                        = "LB_IP"
+		BOOTSTRAP                   = "BOOTSTRAP"
+		AUTO_JOIN                   = "AUTOJOIN"
+		HEALTHCHECK_INTERVAL        = "HEALTHCHECK_INTERVAL"
+		REMOVE_NODE_TIMEOUT         = "REMOVE_NODE_TIMEOUT"
+		HEALTHCHECK_REQUEST_TIMEOUT = "HEALTHCHECK_REQUEST_TIMEOUT"
+		HTTP_ADDR                   = "HTTP_ADDR"
+		RAFT_ADDR                   = "RAFT_ADDR"
+		JOIN_ADDR                   = "JOIN_ADDR"
+		META_ADDR                   = "META_API_ADDR"
+		DNS_API_ADDR                = "DNS_API_ADDR"
+		DNS_ADDR                    = "DNS_ADDR"
+		HTTP_PORT                   = "HTTP_PORT"
+		RAFT_PORT                   = "RAFT_PORT"
+		DNS_API_PORT                = "DNS_API_PORT"
+		META_API_PORT               = "META_API_PORT"
+		UDP_PORT                    = "UDP_PORT"
+		DNS_PORT                    = "DNS_PORT"
 	)
 
 	cfg := rawConfig{}
@@ -110,6 +116,18 @@ func ReadConf() Config {
 		healthInterval = -1
 	}
 	cfg.HealthcheckInterval = healthInterval
+
+	removeTimeout, errRemove := strconv.Atoi(os.Getenv(REMOVE_NODE_TIMEOUT))
+	if errRemove != nil {
+		removeTimeout = -1
+	}
+	cfg.RemoveNodeTimeout = removeTimeout
+
+	healthTimeout, errTimeout := strconv.Atoi(os.Getenv(HEALTHCHECK_REQUEST_TIMEOUT))
+	if errTimeout != nil {
+		healthTimeout = -1
+	}
+	cfg.HealthceckRequestTimeout = healthTimeout
 
 	cfg.HttpAddr = os.Getenv(HTTP_ADDR)
 
@@ -229,20 +247,22 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 
 	//create config
 	config := Config{
-		Hostname:            rawConfig.Hostname,
-		LogLevel:            rawConfig.LogLevel,
-		DataDir:             rawConfig.DataDir,
-		LbIP:                rawConfig.LbIP,
-		Bootstrap:           rawConfig.Bootstrap,
-		Autojoin:            rawConfig.Autojoin,
-		HealthcheckInterval: rawConfig.HealthcheckInterval,
-		HttpAddr:            httpAddr,
-		RaftAddr:            raftAddr,
-		MetaApiAddr:         metaAddr,
-		DnsApiAddr:          dnsApiAddr,
-		DnsAddr:             dnsAddr,
-		JoinAddr:            joinAddr,
-		UdpPort:             rawConfig.UdpPort,
+		Hostname:                 rawConfig.Hostname,
+		LogLevel:                 rawConfig.LogLevel,
+		DataDir:                  rawConfig.DataDir,
+		LbIP:                     rawConfig.LbIP,
+		Bootstrap:                rawConfig.Bootstrap,
+		Autojoin:                 rawConfig.Autojoin,
+		HealthcheckInterval:      rawConfig.HealthcheckInterval,
+		RemoveNodeTimeout:        rawConfig.RemoveNodeTimeout,
+		HealtcheckRequestTimeout: rawConfig.HealthceckRequestTimeout,
+		HttpAddr:                 httpAddr,
+		RaftAddr:                 raftAddr,
+		MetaApiAddr:              metaAddr,
+		DnsApiAddr:               dnsApiAddr,
+		DnsAddr:                  dnsAddr,
+		JoinAddr:                 joinAddr,
+		UdpPort:                  rawConfig.UdpPort,
 	}
 
 	//return config
@@ -250,25 +270,27 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 }
 
 const (
-	Hostname            = "ariel"
-	LogLevel            = 1
-	DataDir             = "alexandria-data"
-	LbIP                = "0.0.0.0:8080"
-	Bootstrap           = false
-	AutoJoin            = true
-	HealthcheckInterval = 3000
-	HttpAddr            = "127.0.0.1"
-	RaftAddr            = "127.0.0.1"
-	MetaApiAddr         = "0.0.0.0"
-	DnsAddr             = "0.0.0.0"
-	DnsApiAddr          = "0.0.0.0"
-	JoinAddr            = ""
-	HttpPort            = 8000
-	RaftPort            = 7000
-	MetaApiPort         = 20000
-	DnsApiPort          = 10000
-	DnsPort             = 53
-	UdpPort             = 9000
+	Hostname                  = "ariel"
+	LogLevel                  = 1
+	DataDir                   = "alexandria-data"
+	LbIP                      = "0.0.0.0:8080"
+	Bootstrap                 = false
+	AutoJoin                  = true
+	HealthcheckInterval       = 3000
+	RemoveNodeTimeout         = 3600
+	HealthcheckRequestTimeout = 1000
+	HttpAddr                  = "127.0.0.1"
+	RaftAddr                  = "127.0.0.1"
+	MetaApiAddr               = "0.0.0.0"
+	DnsAddr                   = "0.0.0.0"
+	DnsApiAddr                = "0.0.0.0"
+	JoinAddr                  = ""
+	HttpPort                  = 8000
+	RaftPort                  = 7000
+	MetaApiPort               = 20000
+	DnsApiPort                = 10000
+	DnsPort                   = 53
+	UdpPort                   = 9000
 )
 
 func setDefaultValue(error validator.FieldError, conf *rawConfig) {
@@ -301,6 +323,12 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 	case "HealthcheckInterval":
 		log.Warn().Msgf("Using default value for %s istead: %d\n", "HealthcheckInterval", HealthcheckInterval)
 		conf.HealthcheckInterval = HealthcheckInterval
+	case "RemoveNodeTimeout":
+		log.Warn().Msgf("Using default value for %s istead: %d\n", "RemoveNodeTimeout", RemoveNodeTimeout)
+		conf.RemoveNodeTimeout = RemoveNodeTimeout
+	case "HealthcheckRequestTimeout":
+		log.Warn().Msgf("Using default value for %s istead: %d\n", "HealthcheckRequestTimeout", HealthcheckRequestTimeout)
+		conf.HealthceckRequestTimeout = HealthcheckRequestTimeout
 	case "HttpAddr":
 		log.Warn().Msgf("Using default value for %s istead: %s\n", "HttpAddr", HttpAddr)
 		conf.HttpAddr = HttpAddr
