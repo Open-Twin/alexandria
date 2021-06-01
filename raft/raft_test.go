@@ -163,7 +163,6 @@ func TestJoinWithCorrectAddressShouldPass(t *testing.T){
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
-
 }
 /*func TestJoinWithIncorrectAddressShouldFail(t *testing.T){
 	req, _ := http.NewRequest("POST","/join", nil)
@@ -288,4 +287,16 @@ func TestPostDataToFollowerAndRetrieveOnLeaderShouldPass(t *testing.T){
 		t.Errorf("test value not correct: %s", followerAns)
 
 	}
+}
+
+func TestJoinWithCorrectAddressOverNetworkShouldPass(t *testing.T){
+	//reset()
+
+	raftAddress := leaderaddr+":"+strconv.Itoa(raftaddrport)
+	req, _ := http.NewRequest("POST","/join", nil)
+	req.Header.Add("Peer-Address", raftAddress)
+
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
 }

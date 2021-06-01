@@ -1,7 +1,7 @@
 package communication
 
 import (
-	"fmt"
+	"github.com/rs/zerolog/log"
 	"net"
 )
 type TCPServer struct {
@@ -51,11 +51,8 @@ func handleConnection(conn net.Conn, handler TCPHandler){
 Handles the data from the udp connection
 */
 func handleTCPData(n int, buffer []byte, addr net.Addr, handler TCPHandler) []byte{
-	fmt.Printf("\n--------------\n")
-	fmt.Printf("packet-received: bytes=%d from=%s over tcp\n",
-		n, addr.String())
-	fmt.Println("from", addr, "-", buffer[:n])
-	fmt.Printf("\n--------------\n")
+	log.Debug().Msgf("packet-received: bytes=%d from=%s over tcp\n from %s - %v",
+		n, addr.String(), addr, buffer[:n])
 	result := handler(addr,buffer)
 	return result
 }
