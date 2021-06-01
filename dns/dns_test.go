@@ -6,6 +6,7 @@ import (
 	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/communication/storageApi"
 	"github.com/Open-Twin/alexandria/raft"
+	"github.com/rs/zerolog"
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net"
@@ -22,6 +23,7 @@ const entrypointAddr = "127.0.0.1"
 const entrypointPort = 10002
 
 func TestMain(m *testing.M) {
+	zerolog.SetGlobalLevel(zerolog.Level(3))
 	raftaddr := net.TCPAddr{
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: 7001,

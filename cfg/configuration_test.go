@@ -19,7 +19,7 @@ func SetTestingConf() {
 	os.Setenv("LOG_LEVEL", "1")
 	os.Setenv("DATA_DIR", wdpath)
 	os.Setenv("BOOTSTRAP", "True")
-	os.Setenv("AUTO_JOIN", "True")
+	os.Setenv("AUTOJOIN", "True")
 	os.Setenv("HEALTHCHECK_INTERVAL", "3000")
 	os.Setenv("HTTP_ADDR", "127.0.0.1")
 	os.Setenv("RAFT_ADDR", "127.0.0.1")
@@ -83,6 +83,7 @@ func TestValidateValidConfig(t *testing.T){
 		DnsApiPort: 10000,
 		UdpPort: 9000,
 		DnsPort: 53,
+		LbIP: LbIP,
 	}
 	_, err := validateConfig(cfg)
 	if err != nil {

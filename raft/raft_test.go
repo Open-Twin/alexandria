@@ -7,6 +7,7 @@ import (
 	"github.com/Open-Twin/alexandria/communication"
 	"github.com/Open-Twin/alexandria/raft"
 	raftlib "github.com/hashicorp/raft"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/mgo.v2/bson"
 	"net"
@@ -17,12 +18,14 @@ import (
 	"testing"
 	"time"
 )
-
+const leaderaddr = "leader"
+const follower1 = "follower1"
 const raftaddrip = "127.0.0.1"
 const raftaddrport = 7000
 const httpaddrip = "127.0.0.1"
 const httpaddrport = 8000
 const broadcastport = 9000
+const metaapiport = 20000
 
 var s communication.HttpServer
 
@@ -56,7 +59,7 @@ func TestMain(m *testing.M) {
 		RaftAddr: raftaddr,
 		HttpAddr: httpaddr,
 	}
-
+	zerolog.SetGlobalLevel(zerolog.Level(3))
 	/*followerConf := cfg.Config{
 		Hostname: "follower",
 		LogLevel: 1,
@@ -130,10 +133,10 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	}
 }
 type response struct {
-	Service string
-	Type string
-	Key string
-	Value map[string]string
+	Service string `bson:"service"`
+	Type string `bson:"type"`
+	Key string `bson:"key"`
+	Value map[string]string `bson:"value"`
 }
 
 func getMessageType(j string) string {
@@ -171,40 +174,6 @@ func TestJoinWithCorrectAddressShouldPass(t *testing.T){
 	checkResponseCode(t, http.StatusInternalServerError, response.Code)
 }*/
 
-/*func TestPostDataToLeaderAndRetrieveOnFollowerShouldPass(t *testing.T){
-	//post data
-	gesucht := "5"
-	msg := bson.M{
-		"service": "electricity",
-		"ip" : "1.2.3.4",
-		"type" : "update",
-		"key" : "voltage",
-		"value" : gesucht,
-	}
-	ans := SendBsonMessage(leaderAddress, msg)
-	answerVals := response{}
-	bson.Unmarshal(ans, &answerVals)
-	if answerVals.Value["Type"] != "ok" {
-		t.Errorf("test failed: %s", ans)
-	}
-
-	getmsg := bson.M{
-		"service": "electricity",
-		"ip" : "1.2.3.4",
-		"type" : "get",
-		"key" : "voltage",
-	}
-	followerAns := SendBsonMessage(followerddress, getmsg)
-	followerAnswerVals := response{}
-	bson.Unmarshal(followerAns, &followerAnswerVals)
-	if answerVals.Value["Type"] != "ok" {
-		t.Errorf("test failed: %s", followerAns)
-	}
-	if answerVals.Value["Value"] != "5"{
-		t.Errorf("test value not correct: %s", followerAns)
-
-	}
-}*/
 
 func TestBootstrapCluster(t *testing.T){
 	if s.Node.RaftNode.State() != raftlib.Leader {
@@ -246,3 +215,77 @@ func TestAutojoin(t *testing.T){
 	t.Errorf("autojoining failed because of no response")
 }
 
+/*
+ * Integration Tests
+ */
+
+func TestPostDataToLeaderAndRetrieveOnFollowerShouldPass(t *testing.T){
+	//post data
+	gesucht := "5"
+	msg := bson.M{
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "store",
+		"key" : "voltage",
+		"value" : gesucht,
+	}
+	ans := SendBsonMessage(leaderaddr+":"+strconv.Itoa(cfg.MetaApiPort), msg)
+	answerVals := response{}
+	bson.Unmarshal(ans, &answerVals)
+	log.Info().Msgf("values: %v",answerVals.Value)
+	if answerVals.Value["type"] != "ok" {
+		t.Errorf("test failed: %s", ans)
+	}
+
+	getmsg := bson.M{
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "get",
+		"key" : "voltage",
+	}
+	time.Sleep(1*time.Second)
+	followerAns := SendBsonMessage(follower1+":"+strconv.Itoa(cfg.MetaApiPort), getmsg)
+	followerAnswerVals := response{}
+	bson.Unmarshal(followerAns, &followerAnswerVals)
+	if followerAnswerVals.Value["type"] != "data" {
+		t.Errorf("test failed: %s", followerAns)
+	} else if followerAnswerVals.Value["value"] != gesucht{
+		t.Errorf("test value not correct: %s", followerAns)
+
+	}
+}
+func TestPostDataToFollowerAndRetrieveOnLeaderShouldPass(t *testing.T){
+	//post data
+	gesucht := "10"
+	msg := bson.M{
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "store",
+		"key" : "ampere",
+		"value" : gesucht,
+	}
+	ans := SendBsonMessage(follower1+":"+strconv.Itoa(cfg.MetaApiPort), msg)
+	answerVals := response{}
+	bson.Unmarshal(ans, &answerVals)
+	log.Info().Msgf("values: %v",answerVals.Value)
+	if answerVals.Value["type"] != "ok" {
+		t.Errorf("test failed: %s", ans)
+	}
+
+	getmsg := bson.M{
+		"service": "electricity",
+		"ip" : "1.2.3.4",
+		"type" : "get",
+		"key" : "ampere",
+	}
+	time.Sleep(1*time.Second)
+	followerAns := SendBsonMessage(leaderaddr+":"+strconv.Itoa(cfg.MetaApiPort), getmsg)
+	followerAnswerVals := response{}
+	bson.Unmarshal(followerAns, &followerAnswerVals)
+	if followerAnswerVals.Value["type"] != "data" {
+		t.Errorf("test failed: %s", followerAns)
+	} else if followerAnswerVals.Value["value"] != gesucht{
+		t.Errorf("test value not correct: %s", followerAns)
+
+	}
+}

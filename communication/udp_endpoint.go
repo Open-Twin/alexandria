@@ -1,7 +1,7 @@
 package communication
 
 import (
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 )
 
@@ -50,7 +50,7 @@ func listen(connection *net.UDPConn, handler UDPHandler, quit chan struct{}) {
 		// because you've only made one buffer per listen().
 		//log.Println("from", remoteAddr, "-", buffer[:n])
 	}
-	log.Println("listener failed - ", err)
+	log.Fatal().Msgf("listener failed - ", err)
 	quit <- struct{}{}
 }
 
@@ -59,11 +59,9 @@ Handles the data from the udp connection
 */
 func handleData(n int, buffer []byte, handler UDPHandler, addr *net.UDPAddr, conn *net.UDPConn) {
 	//defer conn.Close()
-	log.Printf("\n--------------\n")
-	log.Printf("packet-received: bytes=%d from=%s over udp\n",
+	log.Info().Msgf("packet-received: bytes=%d from=%s over udp\n",
 		n, addr.String())
 	//log.Println("from", addr, "-", buffer[:n])
-	log.Printf("\n--------------\n")
 
 	//Handle the data
 	result := handler(addr, buffer)
@@ -81,7 +79,7 @@ Checks if errors are thrown. If yes, it prints the error and exits the program
 func checkError(err error) {
 
 	if err != nil {
-		log.Fatalf("Fatal error: %s", err.Error())
+		log.Fatal().Msgf("Fatal error: %s", err.Error())
 		//Exits the program
 		//os.Exit(1)
 	}
