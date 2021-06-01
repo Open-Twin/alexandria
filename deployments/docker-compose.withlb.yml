@@ -1,0 +1,41 @@
+version: "3"
+# Define services
+services:
+  # App Service
+  loadbalancer:
+    image: golang:latest
+    volumes:
+    - ../:/go/src/go-with-compose
+    working_dir: /go/src/go-with-compose
+    command: go run ./cmd/launchlb.go
+    env_file: .env
+    ports:
+    - "${RAFT_PORT}:${RAFT_PORT}"
+    - "${HTTP_PORT}:${HTTP_PORT}"
+    - "${DNS_API_PORT}:${DNS_API_PORT}/udp"
+    - "${META_API_PORT}:${META_API_PORT}/udp"
+    - "${UDP_PORT}:${UDP_PORT}/udp"
+    - "${DNS_PORT}:${DNS_PORT}/udp"
+    - "${DNS_PORT}:${DNS_PORT}/tcp"
+    networks:
+      front:
+        ipv4_address: 10.2.0.5
+  leader:
+    image: golang:latest
+    volumes:
+    - ../:/go/src/go-with-compose
+    working_dir: /go/src/go-with-compose
+    command: go run ./cmd/main.go
+    env_file: leader_config.env
+    depends_on:
+    - loadbalancer 
+    networks:
+      front:
+        ipv4_address: 10.2.0.2
+networks:
+  front:
+    ipam:
+      driver: default
+      config:
+      - subnet: 10.2.0.0/16
+

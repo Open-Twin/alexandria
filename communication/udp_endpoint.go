@@ -50,7 +50,7 @@ func listen(connection *net.UDPConn, handler UDPHandler, quit chan struct{}) {
 		// because you've only made one buffer per listen().
 		//log.Println("from", remoteAddr, "-", buffer[:n])
 	}
-	log.Fatal().Msgf("listener failed - ", err)
+	log.Fatal().Msgf("listener failed - %v", err)
 	quit <- struct{}{}
 }
 

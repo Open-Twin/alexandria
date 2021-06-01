@@ -7,7 +7,7 @@ services:
     volumes:
     - ../../../:/go/src/alexandria
     working_dir: /go/src/alexandria
-    command: go test ./loadbalancing/loadbalancing_test.go
+    command: go run ./cmd/launchlb.go
     env_file: lb_config_test.env
     ports:
     - "8000:8000"
@@ -57,13 +57,13 @@ services:
     networks:
       front:
         ipv4_address: 10.6.0.3
-  follower2:
+  tester:
     image: golang:latest
     volumes:
     - ../../../:/go/src/alexandria
     working_dir: /go/src/alexandria
     command: go test ./...
-    env_file: follower2_config_test.env
+    env_file: tester_config_test.env
     depends_on: 
     - leader
     - follower1

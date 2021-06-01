@@ -210,9 +210,10 @@ func TestDeleteEntryFail(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
+	gesuchtip := "2.4.8.10"
 	msg := bson.M{
 		"hostname":    "www.ariel.dna",
-		"ip":          "2.4.8.10",
+		"ip":          gesuchtip,
 		"requestType": "store",
 	}
 	ans := SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
@@ -224,7 +225,7 @@ func TestQuery(t *testing.T) {
 	}
 	if len(ips) < 1 {
 		t.Errorf("No ip returned.")
-	} else if !reflect.DeepEqual(ips[0], net.IP{2, 4, 8, 10}) {
+	} else if ips[0].String() != gesuchtip {
 		t.Errorf("Got wrong IP: %s", ips[0])
 	}
 }
@@ -236,6 +237,7 @@ func TestDnsNodeDistribution(t *testing.T) {
 		"requestType": "store",
 	}
 	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	time.Sleep(1 * time.Second)
 	ip1, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
 	if len(ip1) < 1 {
 		t.Errorf("No ip returned.")
@@ -248,6 +250,7 @@ func TestDnsNodeDistribution(t *testing.T) {
 		"requestType": "store",
 	}
 	SendBsonMessage(apiAddr+":"+strconv.Itoa(apiPort), msg, t)
+	time.Sleep(1 * time.Second)
 	ip2, _ := sendDig("eenie.meenie", entrypointAddr+":"+strconv.Itoa(entrypointPort))
 	if len(ip2) < 1 {
 		t.Errorf("No ip returned.")
