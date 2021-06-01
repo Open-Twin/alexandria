@@ -20,6 +20,28 @@ func TestMain(m *testing.M) {
 
 // HealthCheck Part
 
+func TestAutomaticDeletion(t *testing.T) {
+	nodes := map[storage.Ip]dns.NodeHealth{"12.12.12.12": {
+		Healthy:     false,
+		Connections: 0,
+	}}
+
+	hc := loadbalancing.HealthCheck{
+		Nodes:          nodes,
+		Interval:       50 * time.Millisecond,
+		CheckType:      loadbalancing.PingCheck,
+		RemoveTimeout:  1 * time.Second,
+		RequestTimeout: 20 * time.Millisecond,
+	}
+	hc.ScheduleHealthChecks()
+
+	time.Sleep(2 * time.Second)
+	nodes = hc.Nodes
+	if _, ok := nodes["12.12.12.12"]; ok {
+		t.Error("Nodes was not deleted from map after timeout.")
+	}
+}
+
 func TestHealthchecksSendPing(t *testing.T) {
 	nodes := map[storage.Ip]dns.NodeHealth{"127.0.0.1": {
 		Healthy:     false,
@@ -28,12 +50,12 @@ func TestHealthchecksSendPing(t *testing.T) {
 
 	hc := loadbalancing.HealthCheck{
 		Nodes:     nodes,
-		Interval:  10,
+		Interval:  10 * time.Millisecond,
 		CheckType: loadbalancing.PingCheck,
 	}
 	hc.ScheduleHealthChecks()
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(400 * time.Millisecond)
 	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == false {
 		t.Errorf("Sending ping healthcheck did not work: %v", nodes)
@@ -48,12 +70,12 @@ func TestHealthchecksSendPingNodeOffline(t *testing.T) {
 
 	hc := loadbalancing.HealthCheck{
 		Nodes:     nodes,
-		Interval:  10,
+		Interval:  10 * time.Millisecond,
 		CheckType: loadbalancing.PingCheck,
 	}
 	hc.ScheduleHealthChecks()
 
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(400 * time.Millisecond)
 	nodes = hc.Nodes
 	if nodes["12.12.12.12"].Healthy == true {
 		t.Errorf("Ping healthcheck falesly reported node as online: %v", nodes)
@@ -97,7 +119,7 @@ func TestHealthchecksSendHttpNodeOffline(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 	nodes = hc.Nodes
-	if nodes["127.0.0.1"].Healthy == true {
+	if nodes["12.12.12.12"].Healthy == true {
 		t.Errorf("Http healthcheck falesly reported node as online: %v", nodes)
 	}
 }

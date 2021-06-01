@@ -5,6 +5,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 
 	loadbalancer := loadbalancing.AlexandriaBalancer{
 		DnsPort:             53,
-		HealthCheckInterval: 30 * 1000,
+		HealthCheckInterval: 30 * time.Second,
 	}
 	loadbalancer.StartAlexandriaLoadbalancer()
 }

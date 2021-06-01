@@ -9,11 +9,12 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
 type AlexandriaBalancer struct {
 	DnsPort             int
-	HealthCheckInterval int
+	HealthCheckInterval time.Duration
 	nodes               map[storage.Ip]dns.NodeHealth
 	pointer             int
 	lock                sync.RWMutex
@@ -28,9 +29,11 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	go lb.startSignupEndpoint()
 
 	hc := HealthCheck{
-		Nodes:     lb.nodes,
-		Interval:  lb.HealthCheckInterval,
-		CheckType: HttpCheck,
+		Nodes:          lb.nodes,
+		Interval:       lb.HealthCheckInterval,
+		CheckType:      HttpCheck,
+		RemoveTimeout:  1 * time.Hour,
+		RequestTimeout: 1 * time.Second,
 	}
 	hc.ScheduleHealthChecks()
 
@@ -39,7 +42,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 	//	var idrop *float64 = flag.Float64("d", 0.0, "Packet drop rate")
 
 	dnsProxy := UdpProxy{
-		Lb:   lb,
+		Lb: lb,
 		//TODO: no hardcoding
 		Port: 53,
 	}

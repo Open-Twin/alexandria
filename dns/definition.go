@@ -1,5 +1,7 @@
 package dns
 
+import "time"
+
 /*
  * definitions of the following structs and its properties can be found at the RFC 1035:
  * https://tools.ietf.org/html/rfc1035
@@ -80,4 +82,5 @@ type DNSPDU struct {
 type NodeHealth struct {
 	Healthy     bool
 	Connections int
+	LastOnline  time.Time
 }
