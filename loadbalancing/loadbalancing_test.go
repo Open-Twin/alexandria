@@ -4,6 +4,7 @@ import (
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/loadbalancing"
 	"github.com/Open-Twin/alexandria/storage"
+	"github.com/rs/zerolog"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	zerolog.SetGlobalLevel(zerolog.Level(3))
 	code := m.Run()
 	os.Exit(code)
 }
