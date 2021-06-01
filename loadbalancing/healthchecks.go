@@ -62,6 +62,7 @@ func sendHttpCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
 	client := http.Client{
 		Timeout: timeout,
 	}
+	//TODO: port?
 	resp, err := client.Get("http://" + ip + ":8080/health")
 	if err != nil {
 		node.Healthy = false
@@ -81,6 +82,7 @@ func sendHttpCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
 }
 
 func sendPingCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
+	log.Info().Msg("IPIDIOT: "+ip)
 	pinger, err := ping.NewPinger(ip)
 	if err != nil {
 		log.Warn().Msgf("Error on creating pinger: %s\n", err.Error())

@@ -11,11 +11,14 @@ func StartLoadReporting(lbUrl string) {
 	lbRegister(lbUrl)
 
 	http.HandleFunc("/health", sendLoad)
+	//TODO: PORTS
+
 	go http.ListenAndServe(":8080", nil)
 	log.Info().Msg("Started reporting alexandria server load")
 }
 
 func lbRegister(lbUrl string) {
+	//TODO: PORTS
 	resp, err := http.Get("http://" + lbUrl + ":8080/signup")
 	if err != nil {
 		log.Error().Msgf("Registration at loadbalancer failed: %v", err)

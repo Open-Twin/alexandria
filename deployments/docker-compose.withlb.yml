@@ -8,7 +8,7 @@ services:
     - ../:/go/src/go-with-compose
     working_dir: /go/src/go-with-compose
     command: go run ./cmd/launchlb.go
-    env_file: lb_config.env
+    env_file: .env
     ports:
     - "${RAFT_PORT}:${RAFT_PORT}"
     - "${HTTP_PORT}:${HTTP_PORT}"
