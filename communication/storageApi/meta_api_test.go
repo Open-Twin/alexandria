@@ -100,8 +100,8 @@ func SendBsonMessage(address string, msg bson.M) []byte {
 */
 
 func TestAPIShouldBeReachable(t *testing.T) {
-	conn, err := net.DialTimeout("udp", "127.0.0.1:20000",500)
-	defer conn.Close()
+	conn, err := net.Dial("udp", "127.0.0.1:20000")
+	//defer conn.Close()
 	if err != nil {
 		t.Errorf("Error on establishing connection: %s\n", err)
 	}
@@ -120,8 +120,8 @@ func TestAPIShouldBeReachable(t *testing.T) {
 }
 
 func TestAPIShouldNotBeReachable(t *testing.T) {
-	conn, err := net.DialTimeout("udp", "127.0.0.1:20001",500)
-	defer conn.Close()
+	conn, err := net.Dial("udp", "127.0.0.1:20001")
+	//defer conn.Close()
 	if err != nil {
 		t.Errorf("Error on establishing connection: %s\n", err)
 	}
