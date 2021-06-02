@@ -19,6 +19,8 @@ func main() {
 	logLevel := conf.LogLevel
 	zerolog.SetGlobalLevel(zerolog.Level(logLevel))
 
+	log.Debug().Msgf("Config: %v", conf)
+
 	loadbalancer := loadbalancing.AlexandriaBalancer{
 		DnsPort:             cfg.DnsPort,
 		DnsApiPort:          cfg.DnsApiPort,
