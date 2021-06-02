@@ -18,6 +18,7 @@ type rawConfig struct {
 	LogLevel                 int    `validate:"required,max=5,min=1"`
 	DataDir                  string `validate:"required,dir"`
 	LbIP                     string `validate:"required"`
+	LbPort                   int    `validate:"required"`
 	Bootstrap                bool
 	Autojoin                 bool
 	HealthcheckInterval      int    `validate:"required,min=1000"`
@@ -35,13 +36,14 @@ type rawConfig struct {
 	DnsApiPort               int    `validate:"required,max=65536,min=1"`
 	UdpPort                  int    `validate:"required,max=65536,min=1"`
 	DnsPort                  int    `validate:"required,max=65536,min=1"`
+	HttpPingPort             int    `validate:"required"`
 }
 
 type Config struct {
 	Hostname                 string
 	LogLevel                 int
 	DataDir                  string
-	LbIP                     string
+	LbAddr                   string
 	Bootstrap                bool
 	Autojoin                 bool
 	HealthcheckInterval      int
@@ -54,6 +56,7 @@ type Config struct {
 	DnsApiAddr               net.TCPAddr
 	DnsAddr                  net.TCPAddr
 	UdpPort                  int
+	HttpPingPort             int
 }
 
 // Reads the configuration from the environment variables.
@@ -65,6 +68,7 @@ func ReadConf() Config {
 		LOG_LEVEL                   = "LOG_LEVEL"
 		DATA_DIR                    = "DATA_DIR"
 		LBIP                        = "LB_IP"
+		LB_PORT                     = "LB_PORT"
 		BOOTSTRAP                   = "BOOTSTRAP"
 		AUTO_JOIN                   = "AUTOJOIN"
 		HEALTHCHECK_INTERVAL        = "HEALTHCHECK_INTERVAL"
@@ -82,6 +86,7 @@ func ReadConf() Config {
 		META_API_PORT               = "META_API_PORT"
 		UDP_PORT                    = "UDP_PORT"
 		DNS_PORT                    = "DNS_PORT"
+		HTTP_PING_PORT              = "HTTP_PING_PORT"
 	)
 
 	cfg := rawConfig{}
@@ -97,6 +102,12 @@ func ReadConf() Config {
 	cfg.DataDir = os.Getenv(DATA_DIR)
 
 	cfg.LbIP = os.Getenv(LBIP)
+
+	lbPort, errLbPort := strconv.Atoi(os.Getenv(LB_PORT))
+	if errLbPort != nil {
+		lbPort = -1
+	}
+	cfg.LbPort = lbPort
 
 	bootStrap, errBoot := strconv.ParseBool(os.Getenv(BOOTSTRAP))
 	if errBoot != nil {
@@ -177,6 +188,12 @@ func ReadConf() Config {
 	}
 	cfg.DnsPort = dnsPort
 
+	httpPingPort, errPingPort := strconv.Atoi(os.Getenv(DNS_PORT))
+	if errPingPort != nil {
+		httpPingPort = -1
+	}
+	cfg.HttpPingPort = httpPingPort
+
 	validatedCfg, errs := validateConfig(cfg)
 	for err := range errs {
 		log.Error().Msgf("Error in Config: %v", err)
@@ -214,6 +231,7 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 		IP:   bindAddr,
 		Port: rawConfig.RaftPort,
 	}
+	lbAddr := LbIP + ":" + strconv.Itoa(LbPort)
 	//create new tcpaddr from bindAddr and httpport
 	httpAddr := net.TCPAddr{
 		IP:   bindAddr,
@@ -250,7 +268,7 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 		Hostname:                 rawConfig.Hostname,
 		LogLevel:                 rawConfig.LogLevel,
 		DataDir:                  rawConfig.DataDir,
-		LbIP:                     rawConfig.LbIP,
+		LbAddr:                   lbAddr,
 		Bootstrap:                rawConfig.Bootstrap,
 		Autojoin:                 rawConfig.Autojoin,
 		HealthcheckInterval:      rawConfig.HealthcheckInterval,
@@ -273,7 +291,8 @@ const (
 	Hostname                  = "ariel"
 	LogLevel                  = 1
 	DataDir                   = "alexandria-data"
-	LbIP                      = "0.0.0.0:8080"
+	LbIP                      = "0.0.0.0"
+	LbPort                    = 8080
 	Bootstrap                 = false
 	AutoJoin                  = true
 	HealthcheckInterval       = 3000
@@ -291,6 +310,7 @@ const (
 	DnsApiPort                = 10000
 	DnsPort                   = 53
 	UdpPort                   = 9000
+	HttpPingPort              = 8080
 )
 
 func setDefaultValue(error validator.FieldError, conf *rawConfig) {
@@ -317,6 +337,9 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 	case "LbIP":
 		log.Warn().Msgf("Using default value for %s istead: %v\n", "LbIP", LbIP)
 		conf.LbIP = LbIP
+	case "LbPort":
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "LbPort", LbPort)
+		conf.LbPort = LbPort
 	case "Autojoin":
 		log.Warn().Msgf("Using default value for %s istead: %v\n", "Autojoin", AutoJoin)
 		conf.Autojoin = AutoJoin
@@ -365,6 +388,9 @@ func setDefaultValue(error validator.FieldError, conf *rawConfig) {
 	case "UdpPort":
 		log.Warn().Msgf("Using default value for %s istead: %v\n", "UdpPort", UdpPort)
 		conf.UdpPort = UdpPort
+	case "HttpPingPort":
+		log.Warn().Msgf("Using default value for %s istead: %v\n", "HttpPingPort", HttpPingPort)
+		conf.HttpPingPort = HttpPingPort
 	}
 }
 

@@ -4,22 +4,23 @@ import (
 	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-func StartLoadReporting(lbUrl string) {
-	lbRegister(lbUrl)
+func StartLoadReporting(lbAddr string, httpPingPort int) {
+	lbRegister(lbAddr)
 
 	http.HandleFunc("/health", sendLoad)
 	//TODO: PORTS
 
-	go http.ListenAndServe(":8080", nil)
+	go http.ListenAndServe(":"+strconv.Itoa(httpPingPort), nil)
 	log.Info().Msg("Started reporting alexandria server load")
 }
 
 func lbRegister(lbUrl string) {
 	//TODO: PORTS
-	resp, err := http.Get("http://" + lbUrl + ":8080/signup")
+	resp, err := http.Get("http://" + lbUrl + "/signup")
 	if err != nil {
 		log.Error().Msgf("Registration at loadbalancer failed: %v", err)
 	} else {

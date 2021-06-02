@@ -22,10 +22,14 @@ func main() {
 	log.Debug().Msgf("Config: %v", conf)
 
 	loadbalancer := loadbalancing.AlexandriaBalancer{
+		RegistrationPort:    cfg.LbPort,
 		DnsPort:             cfg.DnsPort,
 		DnsApiPort:          cfg.DnsApiPort,
 		MetdataApiPort:      cfg.MetaApiPort,
+		HttpPingPort:        cfg.HttpPingPort,
 		HealthCheckInterval: cfg.HealthcheckInterval * time.Millisecond,
+		RemoveNodeTimeout:   cfg.RemoveNodeTimeout * time.Second,
+		RequestTimeout:      cfg.HealthcheckRequestTimeout * time.Millisecond,
 	}
 	loadbalancer.StartAlexandriaLoadbalancer()
 }
