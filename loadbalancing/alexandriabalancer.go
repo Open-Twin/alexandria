@@ -7,15 +7,18 @@ import (
 	"github.com/rs/zerolog/log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 type AlexandriaBalancer struct {
+	RegistrationPort    int
 	DnsPort             int
 	DnsApiPort          int
 	MetdataApiPort      int
+	HttpPingPort        int
 	HealthCheckInterval time.Duration
 	RemoveNodeTimeout   time.Duration
 	RequestTimeout      time.Duration
@@ -36,6 +39,7 @@ func (lb *AlexandriaBalancer) StartAlexandriaLoadbalancer() {
 		Nodes:          lb.nodes,
 		Interval:       lb.HealthCheckInterval * time.Millisecond,
 		CheckType:      HttpCheck,
+		HttpPingPort:   lb.HttpPingPort,
 		RemoveTimeout:  lb.RemoveNodeTimeout * time.Second,
 		RequestTimeout: lb.RequestTimeout * time.Millisecond,
 	}
@@ -69,7 +73,7 @@ func (lb *AlexandriaBalancer) Close() {
 }
 
 func (lb *AlexandriaBalancer) startSignupEndpoint() {
-	lb.httpServer = http.Server{Addr: ":8080"}
+	lb.httpServer = http.Server{Addr: ":" + strconv.Itoa(lb.RegistrationPort)}
 	http.HandleFunc("/signup", lb.addAlexandriaNode)
 	err := lb.httpServer.ListenAndServe()
 	if err != nil {

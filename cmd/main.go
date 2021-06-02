@@ -53,13 +53,14 @@ func main() {
 		Nodes:          raftNode.Fsm.DnsRepo.LbInfo,
 		Interval:       cfg.HealthcheckInterval * time.Millisecond,
 		CheckType:      loadbalancing.PingCheck,
+		HttpPingPort:   cfg.HttpPingPort,
 		RemoveTimeout:  cfg.RemoveNodeTimeout * time.Second,
 		RequestTimeout: cfg.HealthcheckRequestTimeout * time.Millisecond,
 	}
 	log.Info().Msg("Starting healthchecks")
 	healthchecks.ScheduleHealthChecks()
 
-	loadbalancing.StartLoadReporting(conf.LbIP)
+	loadbalancing.StartLoadReporting(conf.LbAddr, conf.HttpPingPort)
 
 	service := &communication.HttpServer{
 		Node:    raftNode,

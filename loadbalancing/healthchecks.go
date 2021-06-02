@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"runtime"
+	"strconv"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type HealthCheck struct {
 	Nodes          map[storage.Ip]dns.NodeHealth
 	Interval       time.Duration
 	CheckType      CheckType
+	HttpPingPort   int
 	RequestTimeout time.Duration
 	RemoveTimeout  time.Duration
 }
@@ -46,7 +48,7 @@ func (hc *HealthCheck) loopNodes() {
 	for ip := range hc.Nodes {
 		node := hc.Nodes[ip]
 		if hc.CheckType == HttpCheck {
-			sendHttpCheck(ip, &node, hc.RequestTimeout)
+			sendHttpCheck(ip, &node, hc.RequestTimeout, hc.HttpPingPort)
 		} else if hc.CheckType == PingCheck {
 			sendPingCheck(ip, &node, hc.RequestTimeout)
 		}
@@ -58,12 +60,12 @@ func (hc *HealthCheck) loopNodes() {
 	}
 }
 
-func sendHttpCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
+func sendHttpCheck(ip string, node *dns.NodeHealth, timeout time.Duration, httpPort int) {
 	client := http.Client{
 		Timeout: timeout,
 	}
-	//TODO: port?
-	resp, err := client.Get("http://" + ip + ":8080/health")
+
+	resp, err := client.Get("http://" + ip + ":" + strconv.Itoa(httpPort) + "/health")
 	if err != nil {
 		node.Healthy = false
 		log.Info().Msgf("Node %s could not be reached: %s\n", ip, err)
@@ -82,7 +84,7 @@ func sendHttpCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
 }
 
 func sendPingCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
-	log.Info().Msg("IPIDIOT: "+ip)
+	log.Info().Msg("IPIDIOT: " + ip)
 	pinger, err := ping.NewPinger(ip)
 	if err != nil {
 		log.Warn().Msgf("Error on creating pinger: %s\n", err.Error())
