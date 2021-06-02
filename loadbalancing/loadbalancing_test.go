@@ -154,14 +154,16 @@ func TestLoadbalancerNoServerAdded(t *testing.T) {
 	}
 	go loadbalancer.StartAlexandriaLoadbalancer()
 
-	_, err := sendRequest("127.0.0.1:"+strconv.Itoa(10010), "www.dejan.com")
-	if err == nil {
-		fmt.Errorf("Crap")
-	}
+	/*
+		_, err := sendRequest("127.0.0.1:"+strconv.Itoa(10010), "www.dejan.com")
+		if err == nil {
+			fmt.Errorf("Crap")
+		}
+	*/
 }
 
 func TestLoadbalancerSignupEndpoint(t *testing.T) {
-	lbUrl := "http://127.0.0.1:" + strconv.Itoa(10000)
+	lbUrl := "http://127.0.0.1:" + strconv.Itoa(14000)
 
 	t.Logf("Signing in at loadbalancer")
 	err := signinLocalhost(t, lbUrl)
@@ -186,7 +188,7 @@ func TestLoadbalancerForwardRequest(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error on sending request: %v", err)
 	}
-	gesucht := "10.6.0.4"
+	gesucht := "185.21.102.144"
 	if ans[0].String() != gesucht {
 		t.Errorf("Wrong ip returned: %v", ans[0])
 	}
