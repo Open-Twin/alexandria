@@ -1,6 +1,7 @@
 package dns_test
 
 import (
+	"bufio"
 	"context"
 	"github.com/Open-Twin/alexandria/cfg"
 	"github.com/Open-Twin/alexandria/communication"
@@ -118,6 +119,54 @@ func SendBsonMessage(address string, msg bson.M, t *testing.T) []byte {
 
 	return answer
 }
+
+/*
+	TESTING THE DNS AVAILABILITY
+*/
+
+func TestDNSShouldBeReachable(t *testing.T) {
+	conn, err := net.DialTimeout("udp", apiAddr+":"+strconv.Itoa(apiPort),500)
+	defer conn.Close()
+	if err != nil {
+		t.Errorf("Error on establishing connection: %s\n", err)
+	}
+
+	timeoutDuration := 5 * time.Second
+	conn.SetDeadline(time.Now().Add(timeoutDuration))
+
+	msg := []byte("hello")
+	conn.Write(msg)
+	answer := make([]byte, 2048)
+	_, err = bufio.NewReader(conn).Read(answer)
+
+	if err != nil {
+		t.Errorf("Test failed. Cannot read answer")
+	}
+}
+
+func TestDNSShouldNotBeReachable(t *testing.T) {
+	conn, err := net.DialTimeout("udp", apiAddr+":9999",500)
+	defer conn.Close()
+	if err != nil {
+		t.Errorf("Error on establishing connection: %s\n", err)
+	}
+
+	timeoutDuration := 5 * time.Second
+	conn.SetDeadline(time.Now().Add(timeoutDuration))
+
+	msg := []byte("hello")
+	conn.Write(msg)
+	answer := make([]byte, 2048)
+	_, err = bufio.NewReader(conn).Read(answer)
+
+	if err == nil {
+		t.Errorf("Test failed. Can read answer")
+	}
+}
+
+/*
+	TESTING THE DNS FUNCTIONALITY
+*/
 
 func TestStoreEntryPass(t *testing.T) {
 	msg := bson.M{
