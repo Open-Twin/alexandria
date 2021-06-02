@@ -1,6 +1,8 @@
 package loadbalancing_test
 
 import (
+	"context"
+	"fmt"
 	"github.com/Open-Twin/alexandria/dns"
 	"github.com/Open-Twin/alexandria/loadbalancing"
 	"github.com/Open-Twin/alexandria/storage"
@@ -51,9 +53,11 @@ func TestHealthchecksSendPing(t *testing.T) {
 	}}
 
 	hc := loadbalancing.HealthCheck{
-		Nodes:     nodes,
-		Interval:  10 * time.Millisecond,
-		CheckType: loadbalancing.PingCheck,
+		Nodes:          nodes,
+		Interval:       30 * time.Millisecond,
+		CheckType:      loadbalancing.PingCheck,
+		RemoveTimeout:  5 * time.Second,
+		RequestTimeout: 20 * time.Millisecond,
 	}
 	hc.ScheduleHealthChecks()
 
@@ -71,9 +75,11 @@ func TestHealthchecksSendPingNodeOffline(t *testing.T) {
 	}}
 
 	hc := loadbalancing.HealthCheck{
-		Nodes:     nodes,
-		Interval:  10 * time.Millisecond,
-		CheckType: loadbalancing.PingCheck,
+		Nodes:          nodes,
+		Interval:       30 * time.Millisecond,
+		CheckType:      loadbalancing.PingCheck,
+		RemoveTimeout:  2 * time.Second,
+		RequestTimeout: 20 * time.Millisecond,
 	}
 	hc.ScheduleHealthChecks()
 
@@ -85,7 +91,7 @@ func TestHealthchecksSendPingNodeOffline(t *testing.T) {
 }
 
 func TestHealthchecksSendHttp(t *testing.T) {
-	loadbalancing.StartLoadReporting("127.0.0.1:8080")
+	loadbalancing.StartLoadReporting("127.0.0.1", 8001)
 
 	nodes := map[storage.Ip]dns.NodeHealth{"127.0.0.1": {
 		Healthy:     false,
@@ -93,13 +99,16 @@ func TestHealthchecksSendHttp(t *testing.T) {
 	}}
 
 	hc := loadbalancing.HealthCheck{
-		Nodes:     nodes,
-		Interval:  10,
-		CheckType: loadbalancing.HttpCheck,
+		Nodes:          nodes,
+		Interval:       30 * time.Millisecond,
+		CheckType:      loadbalancing.HttpCheck,
+		HttpPingPort:   8001,
+		RemoveTimeout:  1 * time.Second,
+		RequestTimeout: 20 * time.Millisecond,
 	}
 	hc.ScheduleHealthChecks()
 
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	nodes = hc.Nodes
 	if nodes["127.0.0.1"].Healthy == false {
 		t.Errorf("Sending http healthcheck did not work: %v", nodes)
@@ -113,9 +122,12 @@ func TestHealthchecksSendHttpNodeOffline(t *testing.T) {
 	}}
 
 	hc := loadbalancing.HealthCheck{
-		Nodes:     nodes,
-		Interval:  10,
-		CheckType: loadbalancing.HttpCheck,
+		Nodes:          nodes,
+		Interval:       10 * time.Millisecond,
+		CheckType:      loadbalancing.HttpCheck,
+		HttpPingPort:   8080,
+		RemoveTimeout:  1 * time.Second,
+		RequestTimeout: 20 * time.Millisecond,
 	}
 	hc.ScheduleHealthChecks()
 
@@ -129,99 +141,103 @@ func TestHealthchecksSendHttpNodeOffline(t *testing.T) {
 // AlexandriaBalancer Part
 var dnsAnswer = "My name is dns."
 
-func TestLoadbalancerSignupEndpoint(t *testing.T) {
-	/*
-		loadbalancer := loadbalancing.AlexandriaBalancer{
-			DnsPort:             53,
-			HealthCheckInterval: 30 * 1000,
-		}
-		loadbalancer.StartAlexandriaLoadbalancer()
-
-		lbUrl := "http://127.0.0.1:8080/"
-
-		signinLocalhost(t, lbUrl)
-
-		time.Sleep(1000)
-	*/
-}
-
-func TestLoadbalancerRequest(t *testing.T) {
-	/*
-		lbIp := "127.0.0.1"
-		dnsPort := 8333
-
-		startTestingDns(t, dnsPort)
-
-		signinLocalhost(t, "http://"+lbIp+":8080/")
-
-		answer := sendRequest(t, lbIp+":"+strconv.Itoa(dnsPort))
-		if answer != dnsAnswer {
-			t.Errorf("Wrong answer from dns server: %s", answer)
-		}*/
-}
-
-func TestLoadbalancerServerGoesDown(t *testing.T) {
-
-}
-
 func TestLoadbalancerNoServerAdded(t *testing.T) {
-	/*lbIp := "127.0.0.1"
-	dnsPort := 8333
+	loadbalancer := loadbalancing.AlexandriaBalancer{
+		RegistrationPort:    14000,
+		DnsPort:             10000,
+		DnsApiPort:          14001,
+		MetdataApiPort:      14002,
+		HttpPingPort:        14003,
+		HealthCheckInterval: 5 * time.Second,
+		RemoveNodeTimeout:   5 * time.Second,
+		RequestTimeout:      100 * time.Millisecond,
+	}
+	go loadbalancer.StartAlexandriaLoadbalancer()
 
-	answer := sendRequest(t, lbIp+strconv.Itoa(dnsPort))
-	if answer != "no nodes available" {
-		t.Errorf("Wrong answer from Loadbalancer: %s", answer)
-	}*/
+	_, err := sendRequest("127.0.0.1:"+strconv.Itoa(10010), "www.dejan.com")
+	if err == nil {
+		fmt.Errorf("Crap")
+	}
 }
 
-/*
-func TestServerNoResponse(t *testing.T) {
+func TestLoadbalancerSignupEndpoint(t *testing.T) {
+	lbUrl := "http://127.0.0.1:" + strconv.Itoa(10000)
+
+	t.Logf("Signing in at loadbalancer")
+	err := signinLocalhost(t, lbUrl)
+	if err != nil {
+		t.Errorf("Registration did not work: %v", err.Error())
+	}
+}
+
+func TestLoadbalancerForwardRequest(t *testing.T) {
+	dnsIp := "10.6.0.3"
+
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * time.Duration(5000),
+			}
+			return d.DialContext(ctx, network, dnsIp)
+		},
+	}
+	ans, err := r.LookupIPAddr(context.Background(), "www.dejan.at")
+	if err != nil {
+		t.Errorf("Error on sending request: %v", err)
+	}
+	gesucht := "10.6.0.4"
+	if ans[0].String() != gesucht {
+		t.Errorf("Wrong ip returned: %v", ans[0])
+	}
+}
+
+/*func TestLoadbalancerServerGoesDown(t *testing.T) {
 
 }*/
 
-func signinLocalhost(t *testing.T, lbUrl string) {
-	resp, err := http.Get(lbUrl + "signup")
+func signinLocalhost(t *testing.T, lbUrl string) (err error) {
+	resp, err := http.Get(lbUrl + "/signup")
 	if err != nil {
-		t.Errorf("Error: %v", err)
+		return err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		t.Errorf("Error: %v", err)
+		return err
 	}
 
 	if string(body) != "succesfully added" {
-		t.Errorf("Adding node didn't work: %v", string(body))
+		return err
+	}
+	return nil
+}
+
+func startTestingDns(dnsPort int) error {
+	connect, err := net.ListenPacket("udp", ":"+strconv.Itoa(dnsPort))
+
+	if err != nil {
+		return err
+	}
+	defer connect.Close()
+
+	for {
+		msg := make([]byte, 512)
+		// read message
+		_, addr, err := connect.ReadFrom(msg)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Message from client: %s", addr.String())
+
+		// Send answer in new thread
+		go func(conn net.PacketConn, addr net.Addr, msg string) {
+			conn.WriteTo([]byte(msg), addr)
+		}(connect, addr, dnsAnswer)
 	}
 }
 
-func startTestingDns(t *testing.T, dnsPort int) {
-	go func(t *testing.T) {
-		connect, err := net.ListenPacket("udp", ":"+strconv.Itoa(dnsPort))
-
-		if err != nil {
-			t.Errorf("Error listening to dns port: %v", err.Error())
-		}
-		defer connect.Close()
-
-		for {
-			msg := make([]byte, 512)
-			// read message
-			_, addr, err := connect.ReadFrom(msg)
-			if err != nil {
-				t.Errorf("Error receiving dns message: %v", err.Error())
-			}
-			t.Logf("Message from client: %s", addr.String())
-
-			// Send answer in new thread
-			go func(conn net.PacketConn, addr net.Addr, msg string) {
-				conn.WriteTo([]byte(msg), addr)
-			}(connect, addr, dnsAnswer)
-		}
-	}(t)
-}
-
-func sendRequest(t *testing.T, ip string) string {
+func sendRequest(lbip string, request string) (string, error) {
 	/*r := &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -233,16 +249,16 @@ func sendRequest(t *testing.T, ip string) string {
 	}
 	answer, err := r.LookupHost(context.Background(), "www.example.com")
 	*/
-	receiverAddr, _ := net.ResolveUDPAddr("udp", ip)
+	receiverAddr, _ := net.ResolveUDPAddr("udp", lbip)
 	target, _ := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
-	a, err := target.WriteToUDP([]byte("dejan.com"), receiverAddr)
-	t.Logf("Holandese: %s", strconv.Itoa(a))
+	a, err := target.WriteToUDP([]byte(request), receiverAddr)
+	fmt.Printf("Holandese: %s", strconv.Itoa(a))
 
 	if err != nil {
-		t.Errorf("Bla: %s", err)
+		return "", err
 	}
 
-	return strconv.Itoa(a)
+	return strconv.Itoa(a), nil
 	//return answer[0] }
 }
 
@@ -258,32 +274,4 @@ func equal(a, b []string) bool {
 	}
 	return true
 }
-
-func TestStartServer(t *testing.T) {
-	lb := StartAlexandriaLoadbalancer(1212)
-	lb.AddDns("127.0.0.1:8333")
-	answer := sendRequest("127.0.0.1:1212", t)
-	fmt.Printf("Champagner: %s", answer)
-	if !strings.HasPrefix(string(answer), "Message fowarded to: ") {
-		t.Errorf("Wrong answer from dns-server: %s", string(answer))
-	}
-}
-
-func TestResponse(t *testing.T) {
-	lb := StartAlexandriaLoadbalancer(1212)
-	lb.AddDns("127.0.0.1:8333")
-
-	answer := string(sendRequest("127.0.0.1:1212", t))
-	if answer != "this is the dns speaking. over" {
-		t.Errorf("Wrong answer from dns server: %s", answer)
-	}
-}
-
-func TestNoServerAdded(t *testing.T) {
-	StartAlexandriaLoadbalancer(1212)
-
-	answer := sendRequest("127.0.0.1:1212", t)
-	fmt.Println(answer)
-}
-
 */
