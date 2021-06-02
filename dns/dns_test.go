@@ -12,7 +12,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -125,8 +124,10 @@ func SendBsonMessage(address string, msg bson.M, t *testing.T) []byte {
 */
 
 func TestDNSShouldBeReachable(t *testing.T) {
+
 	conn, err := net.Dial("udp", apiAddr+":"+strconv.Itoa(apiPort))
 	//defer conn.Close()
+
 	if err != nil {
 		t.Errorf("Error on establishing connection: %s\n", err)
 	}
@@ -145,8 +146,10 @@ func TestDNSShouldBeReachable(t *testing.T) {
 }
 
 func TestDNSShouldNotBeReachable(t *testing.T) {
+
 	conn, err := net.Dial("udp", apiAddr+":9999")
 	//defer conn.Close()
+
 	if err != nil {
 		t.Errorf("Error on establishing connection: %s\n", err)
 	}
@@ -306,7 +309,7 @@ func TestDnsNodeDistribution(t *testing.T) {
 		return
 	}
 
-	if reflect.DeepEqual(ip1[0], ip2[0]) {
+	if ip1[0].String() == ip2[0].String() {
 		t.Errorf("Same ip was returned two times: %s, %s", ip1[0], ip2[0])
 	}
 }
