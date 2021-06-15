@@ -69,7 +69,7 @@ func join(joinaddr, raftaddr string, maxTries int) error {
 	failedJoins := -1
 	for {
 		if err := retryJoin(); err != nil {
-			log.Error().Msg("error joining cluster: "+joinaddr)
+			log.Debug().Msg("error joining cluster: "+joinaddr)
 			failedJoins++
 			if maxTries > 0 && failedJoins >= maxTries {
 				return errors.New("exceeded maximum join tries")
