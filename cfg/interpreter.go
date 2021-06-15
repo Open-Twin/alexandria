@@ -18,7 +18,7 @@ type rawConfig struct {
 	LogLevel                 int    `validate:"required,max=5,min=1"`
 	DataDir                  string `validate:"required,dir"`
 	LbIP                     string `validate:"required"`
-	LbPort                   int    `validate:"required"`
+	LbPort                   int    `validate:"required,max=65536,min=1"`
 	Bootstrap                bool
 	Autojoin                 bool
 	HealthcheckInterval      int    `validate:"required,min=1000"`
