@@ -68,7 +68,7 @@ func ReadConf() Config {
 		LOG_LEVEL                   = "LOG_LEVEL"
 		DATA_DIR                    = "DATA_DIR"
 		LBIP                        = "LB_IP"
-		LB_PORT                     = "LB__REGISTRATION_PORT"
+		LB_PORT                     = "LB_REGISTRATION_PORT"
 		BOOTSTRAP                   = "BOOTSTRAP"
 		AUTO_JOIN                   = "AUTOJOIN"
 		HEALTHCHECK_INTERVAL        = "HEALTHCHECK_INTERVAL"
