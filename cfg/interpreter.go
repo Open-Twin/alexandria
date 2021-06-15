@@ -231,7 +231,7 @@ func validateConfig(rawConfig rawConfig) (Config, []validator.FieldError) {
 		IP:   bindAddr,
 		Port: rawConfig.RaftPort,
 	}
-	lbAddr := LbIP + ":" + strconv.Itoa(LbPort)
+	lbAddr := rawConfig.LbIP + ":" + strconv.Itoa(rawConfig.LbPort)
 	//create new tcpaddr from bindAddr and httpport
 	httpAddr := net.TCPAddr{
 		IP:   bindAddr,
