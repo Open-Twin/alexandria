@@ -188,7 +188,7 @@ func ReadConf() Config {
 	}
 	cfg.DnsPort = dnsPort
 
-	httpPingPort, errPingPort := strconv.Atoi(os.Getenv(DNS_PORT))
+	httpPingPort, errPingPort := strconv.Atoi(os.Getenv(HTTP_PING_PORT))
 	if errPingPort != nil {
 		httpPingPort = -1
 	}
