@@ -84,7 +84,6 @@ func sendHttpCheck(ip string, node *dns.NodeHealth, timeout time.Duration, httpP
 }
 
 func sendPingCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
-	log.Info().Msg("IPIDIOT: " + ip)
 	pinger, err := ping.NewPinger(ip)
 	if err != nil {
 		log.Warn().Msgf("Error on creating pinger: %s\n", err.Error())
