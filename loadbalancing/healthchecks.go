@@ -7,7 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
-	"runtime"
 	"strconv"
 	"time"
 )
@@ -89,10 +88,10 @@ func sendPingCheck(ip string, node *dns.NodeHealth, timeout time.Duration) {
 		log.Warn().Msgf("Error on creating pinger: %s\n", err.Error())
 		return
 	}
-	os := runtime.GOOS
-	if os == "windows" {
-		pinger.SetPrivileged(true)
-	}
+	//os := runtime.GOOS
+	//if os == "windows" {
+	pinger.SetPrivileged(true)
+	//}
 
 	pinger.Count = 3
 	pinger.Interval = 10
